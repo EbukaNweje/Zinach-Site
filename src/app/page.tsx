@@ -31,9 +31,16 @@ export default function Home() {
       <main>
         <section
           id="home"
-          className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 px-6 py-20 text-white"
+          className="relative overflow-hidden px-6 py-20 text-white"
         >
-          <div className="mx-auto flex max-w-7xl flex-col gap-12 lg:flex-row lg:items-center lg:justify-between">
+          <img
+            src="/drdc.jpeg"
+            alt="Dr. William Makis MD"
+            className="absolute inset-0 h-full w-full object-cover"
+            aria-hidden="true"
+          />
+          <div className="absolute inset-0 bg-slate-950/50" />
+          <div className="relative mx-auto flex max-w-7xl flex-col gap-12 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-2xl">
               <p className="mb-4 inline-block rounded-full bg-white/10 px-4 py-2 text-sm uppercase tracking-[0.3em] text-slate-200">
                 Licensed U.S. Pharmacy
@@ -65,7 +72,7 @@ export default function Home() {
               <div className="relative rounded-[2rem] border border-white/10 bg-white/10 p-10 shadow-2xl backdrop-blur-xl">
                 <div className="aspect-[4/3] w-full overflow-hidden rounded-[1.75rem] bg-slate-800">
                   <img
-                    src="/drdc.jpeg"
+                    src="/rightimage.jpeg"
                     alt="Dr William Makis MD holding wellness products"
                     className="h-full w-full object-cover"
                   />

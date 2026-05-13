@@ -81,7 +81,11 @@ export default function BillingPage() {
     if (!form.agree) {
       return;
     }
-    router.push(`/payment?method=${encodeURIComponent(form.paymentMethod)}`);
+    router.push(
+      `/payment?method=${encodeURIComponent(form.paymentMethod)}&amount=${total.toFixed(
+        2,
+      )}`,
+    );
   };
 
   return (
