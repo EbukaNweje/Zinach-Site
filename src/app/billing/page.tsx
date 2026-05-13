@@ -149,7 +149,7 @@ export default function BillingPage() {
                 </label>
               </div>
 
-              <div className="rounded-[2rem] bg-slate-50 p-6">
+              <div className="rounded-4xl bg-slate-50 p-6">
                 <h2 className="mb-5 text-xl font-semibold text-slate-900">
                   Billing Address
                 </h2>
