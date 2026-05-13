@@ -6,9 +6,18 @@ interface PaymentPageProps {
   };
 }
 
+type PaymentMethod =
+  | "Chime"
+  | "Apple Pay"
+  | "Zelle"
+  | "PayPal"
+  | "Venmo"
+  | "Credit Card"
+  | "BTC address";
+
 export default function PaymentPage({ searchParams }: PaymentPageProps) {
-  const method = searchParams.method || "Chime";
-  const paymentInstructions = {
+  const method = (searchParams.method || "Chime") as PaymentMethod;
+  const paymentInstructions: Record<PaymentMethod, string> = {
     Chime: "Use your Chime app to send payment to our Chime account.",
     "Apple Pay": "Use Apple Pay to complete the payment through your device.",
     Zelle: "Use Zelle and send payment to our registered Zelle email.",
