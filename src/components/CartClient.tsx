@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { products } from "../lib/products";
-import { clearCart, removeFromCart, updateCartQuantity } from "../lib/cart";
+import { clearCart, removeFromCart } from "../lib/cart";
 import { useCart } from "./CartContext";
 
 type CartEntry = {
@@ -24,16 +24,6 @@ export default function CartClient() {
 
   const handleRemove = (slug: string) => {
     removeFromCart(slug);
-    refreshCart();
-  };
-
-  const handleDecrease = (slug: string, currentQuantity: number) => {
-    updateCartQuantity(slug, currentQuantity - 1);
-    refreshCart();
-  };
-
-  const handleIncrease = (slug: string, currentQuantity: number) => {
-    updateCartQuantity(slug, currentQuantity + 1);
     refreshCart();
   };
 
@@ -101,25 +91,6 @@ export default function CartClient() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700">
-                <div className="flex items-center rounded-full border border-slate-200 bg-white text-slate-900">
-                  <button
-                    type="button"
-                    onClick={() => handleDecrease(entry.slug, entry.quantity)}
-                    className="h-10 w-10 rounded-l-full border-r border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700 hover:bg-slate-200"
-                  >
-                    –
-                  </button>
-                  <span className="px-4 text-sm font-semibold">
-                    {entry.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleIncrease(entry.slug, entry.quantity)}
-                    className="h-10 w-10 rounded-r-full border-l border-slate-200 bg-slate-100 text-lg font-semibold text-slate-700 hover:bg-slate-200"
-                  >
-                    +
-                  </button>
-                </div>
                 <span>{entry.product?.price}</span>
                 <button
                   type="button"

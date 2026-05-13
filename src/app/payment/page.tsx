@@ -7,7 +7,19 @@ interface PaymentPageProps {
 }
 
 export default function PaymentPage({ searchParams }: PaymentPageProps) {
-  const method = searchParams.method || "Paypal";
+  const method = searchParams.method || "Chime";
+  const paymentInstructions = {
+    Chime: "Use your Chime app to send payment to our Chime account.",
+    "Apple Pay": "Use Apple Pay to complete the payment through your device.",
+    Zelle: "Use Zelle and send payment to our registered Zelle email.",
+    PayPal: "Use PayPal to transfer payment to our PayPal account.",
+    Venmo: "Use Venmo to send payment to our Venmo handle.",
+    "Credit Card": "Use your card details to complete the secure checkout.",
+    "BTC address":
+      "Send BTC to the address shown below using your crypto wallet.",
+  };
+  const instructions = paymentInstructions[method] || paymentInstructions.Chime;
+  const btcAddress = "bc1qexamplebtcaddress0000000000000";
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="mx-auto max-w-3xl px-6 py-20">
@@ -38,7 +50,7 @@ export default function PaymentPage({ searchParams }: PaymentPageProps) {
                 Payment Instructions
               </h2>
               <p className="mt-4 leading-7 text-slate-700">
-                Please open your {method} app and send payment to our account.
+                {instructions}
                 Once payment is completed, return to the site for order
                 confirmation.
               </p>
@@ -49,10 +61,17 @@ export default function PaymentPage({ searchParams }: PaymentPageProps) {
                 <p>
                   <span className="font-semibold">Amount:</span> $XX.XX
                 </p>
-                <p>
-                  <span className="font-semibold">Reference:</span> Your order
-                  email or phone number
-                </p>
+                {method === "BTC address" ? (
+                  <p>
+                    <span className="font-semibold">BTC Address:</span>{" "}
+                    {btcAddress}
+                  </p>
+                ) : (
+                  <p>
+                    <span className="font-semibold">Reference:</span> Your order
+                    email or phone number
+                  </p>
+                )}
               </div>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">

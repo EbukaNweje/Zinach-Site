@@ -129,7 +129,7 @@ export default function AboutPage() {
           </div>
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-950 shadow-2xl">
             <img
-              src="/WhatsApp%20Image%202026-05-12%20at%2012.58.39.jpeg"
+              src="/certificate.jpeg"
               alt="Certificate for Dr William Makis MD"
               className="h-full w-full object-cover"
             />

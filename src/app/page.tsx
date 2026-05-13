@@ -11,7 +11,7 @@ const faqs = [
   {
     question: "Can I choose a different payment method?",
     answer:
-      "Yes. The billing page offers Paypal, CashApp, and Venmo options for payment.",
+      "Yes. The billing page offers Chime, Apple Pay, Zelle, PayPal, Venmo, Credit Card, and BTC address options.",
   },
   {
     question: "Do you ship nationwide?",
@@ -63,7 +63,13 @@ export default function Home() {
             </div>
             <div className="grid w-full max-w-lg place-items-center">
               <div className="relative rounded-[2rem] border border-white/10 bg-white/10 p-10 shadow-2xl backdrop-blur-xl">
-                <div className="aspect-[4/3] w-full overflow-hidden rounded-[1.75rem] bg-slate-800" />
+                <div className="aspect-[4/3] w-full overflow-hidden rounded-[1.75rem] bg-slate-800">
+                  <img
+                    src="/drdc.jpeg"
+                    alt="Dr William Makis MD holding wellness products"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
                 <div className="mt-6 grid gap-4 rounded-3xl bg-slate-900/80 p-6 text-slate-200 shadow-xl">
                   <div className="flex items-center justify-between text-sm text-slate-300">
                     <span>FedEx 1–4 Days Shipping</span>
@@ -92,7 +98,7 @@ export default function Home() {
               Product List
             </p>
             <h2 className="text-4xl font-semibold text-slate-900">
-              Our Most Popular Medicines
+              Our Most Popular Ivermectin Kits
             </h2>
             <p className="mx-auto max-w-2xl text-slate-600">
               Choose the right medication for your needs and complete your order
@@ -105,35 +111,30 @@ export default function Home() {
                 key={product.name}
                 className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
               >
-                <Link href={`/product/${product.slug}`} className="block">
-                  <div className="mb-6 h-56 overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-slate-100 via-slate-200 to-slate-100 transition duration-300 group-hover:opacity-90" />
-                  <span className="mb-3 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs uppercase tracking-[0.24em] text-slate-500">
-                    {product.brand}
-                  </span>
-                  <h3 className="text-2xl font-semibold text-slate-900">
-                    {product.name}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {product.description}
-                  </p>
-                </Link>
-
-                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="overflow-hidden rounded-[1.75rem] bg-slate-50">
+                  <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 via-slate-200 to-slate-100" />
+                </div>
+                <span className="mt-6 inline-flex rounded-full bg-slate-100 px-4 py-2 text-xs uppercase tracking-[0.24em] text-slate-500">
+                  {product.brand}
+                </span>
+                <h3 className="mt-4 text-2xl font-semibold text-slate-900">
+                  {product.name}
+                </h3>
+                <div className="mt-3 flex items-end justify-between gap-4">
                   <div>
-                    <p className="text-sm text-slate-500">Per capsule</p>
+                    <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+                      per capsule
+                    </p>
                     <p className="text-3xl font-bold text-slate-900">
                       {product.price}
                     </p>
                   </div>
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <Link
-                      href={`/product/${product.slug}`}
-                      className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100"
-                    >
-                      View Details
-                    </Link>
-                    <AddToCartButton product={product} />
-                  </div>
+                </div>
+                <select className="mt-6 w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400">
+                  <option>— Select option —</option>
+                </select>
+                <div className="mt-5">
+                  <AddToCartButton product={product} />
                 </div>
               </article>
             ))}
@@ -166,8 +167,8 @@ export default function Home() {
                 <div className="rounded-3xl bg-slate-900/90 p-6">
                   <h3 className="text-xl font-semibold">Easy checkout</h3>
                   <p className="mt-3 text-slate-300">
-                    Complete your billing information and choose PayPal,
-                    CashApp, or Venmo.
+                    Complete your billing information and choose Chime, Apple
+                    Pay, Zelle, PayPal, Venmo, Credit Card, or BTC address.
                   </p>
                 </div>
               </div>
