@@ -1,65 +1,262 @@
-import Image from "next/image";
+import Link from "next/link";
+import { products } from "../lib/products";
+import AddToCartButton from "../components/AddToCartButton";
+
+const faqs = [
+  {
+    question: "How do I place an order?",
+    answer:
+      "Use the product section to choose a medication and then visit the Billing page to complete your purchase.",
+  },
+  {
+    question: "Can I choose a different payment method?",
+    answer:
+      "Yes. The billing page offers Paypal, CashApp, and Venmo options for payment.",
+  },
+  {
+    question: "Do you ship nationwide?",
+    answer:
+      "Yes. We ship across the United States with express shipping available at checkout.",
+  },
+  {
+    question: "Is payment required before shipping?",
+    answer:
+      "Yes. Orders are only processed and shipped after payment is confirmed and cleared.",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <main>
+        <section
+          id="home"
+          className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 px-6 py-20 text-white"
+        >
+          <div className="mx-auto flex max-w-7xl flex-col gap-12 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <p className="mb-4 inline-block rounded-full bg-white/10 px-4 py-2 text-sm uppercase tracking-[0.3em] text-slate-200">
+                Licensed U.S. Pharmacy
+              </p>
+              <h1 className="text-5xl font-bold leading-tight md:text-6xl">
+                Dr William Makis MD — Wellness Pharmacy
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-slate-200">
+                Access real healthcare from the comfort of your own home with
+                trusted medications, fast shipping, and physician-reviewed
+                prescriptions.
+              </p>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <a
+                  href="#products"
+                  className="inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-slate-900 shadow-lg transition hover:bg-slate-100"
+                >
+                  Order Now
+                </a>
+                <Link
+                  href="/products"
+                  className="inline-flex items-center justify-center rounded-full border border-white/30 bg-white/10 px-8 py-3 text-sm font-semibold text-white transition hover:bg-white/20"
+                >
+                  Start Shopping
+                </Link>
+              </div>
+            </div>
+            <div className="grid w-full max-w-lg place-items-center">
+              <div className="relative rounded-[2rem] border border-white/10 bg-white/10 p-10 shadow-2xl backdrop-blur-xl">
+                <div className="aspect-[4/3] w-full overflow-hidden rounded-[1.75rem] bg-slate-800" />
+                <div className="mt-6 grid gap-4 rounded-3xl bg-slate-900/80 p-6 text-slate-200 shadow-xl">
+                  <div className="flex items-center justify-between text-sm text-slate-300">
+                    <span>FedEx 1–4 Days Shipping</span>
+                    <span>Physician-Supervised</span>
+                  </div>
+                  <div className="rounded-3xl bg-slate-800/80 p-5">
+                    <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+                      Featured Offer
+                    </p>
+                    <h2 className="mt-3 text-2xl font-semibold text-white">
+                      Ivermectin 9mg
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-300">
+                      Fast, reliable treatment in a convenient capsule.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="products" className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-12 flex flex-col gap-4 text-center">
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+              Product List
+            </p>
+            <h2 className="text-4xl font-semibold text-slate-900">
+              Our Most Popular Medicines
+            </h2>
+            <p className="mx-auto max-w-2xl text-slate-600">
+              Choose the right medication for your needs and complete your order
+              in the billing section.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {products.map((product) => (
+              <article
+                key={product.name}
+                className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <Link href={`/product/${product.slug}`} className="block">
+                  <div className="mb-6 h-56 overflow-hidden rounded-[1.75rem] bg-gradient-to-br from-slate-100 via-slate-200 to-slate-100 transition duration-300 group-hover:opacity-90" />
+                  <span className="mb-3 inline-block rounded-full bg-slate-100 px-3 py-1 text-xs uppercase tracking-[0.24em] text-slate-500">
+                    {product.brand}
+                  </span>
+                  <h3 className="text-2xl font-semibold text-slate-900">
+                    {product.name}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {product.description}
+                  </p>
+                </Link>
+
+                <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">Per capsule</p>
+                    <p className="text-3xl font-bold text-slate-900">
+                      {product.price}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <Link
+                      href={`/product/${product.slug}`}
+                      className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100"
+                    >
+                      View Details
+                    </Link>
+                    <AddToCartButton product={product} />
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="about" className="bg-slate-950 px-6 py-20 text-white">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+              <div>
+                <p className="text-sm uppercase tracking-[0.24em] text-slate-400">
+                  About Us
+                </p>
+                <h2 className="mt-4 text-4xl font-semibold">
+                  Trusted care with every order
+                </h2>
+                <p className="mt-6 max-w-xl leading-8 text-slate-300">
+                  All Family Health is a licensed U.S. pharmacy delivering
+                  physician-supervised prescriptions and wellness essentials
+                  with fast shipping and clear payment guidance.
+                </p>
+              </div>
+              <div className="grid gap-4 rounded-[2rem] border border-white/10 bg-white/5 p-8 shadow-2xl">
+                <div className="rounded-3xl bg-slate-900/90 p-6">
+                  <h3 className="text-xl font-semibold">Safe delivery</h3>
+                  <p className="mt-3 text-slate-300">
+                    Orders are verified and processed only after payment clears.
+                  </p>
+                </div>
+                <div className="rounded-3xl bg-slate-900/90 p-6">
+                  <h3 className="text-xl font-semibold">Easy checkout</h3>
+                  <p className="mt-3 text-slate-300">
+                    Complete your billing information and choose PayPal,
+                    CashApp, or Venmo.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="mx-auto max-w-7xl px-6 py-20">
+          <div className="mb-12 text-center">
+            <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
+              FAQ
+            </p>
+            <h2 className="mt-3 text-4xl font-semibold text-slate-900">
+              Frequently Asked Questions
+            </h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            {faqs.map((item) => (
+              <div
+                key={item.question}
+                className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm"
+              >
+                <h3 className="text-xl font-semibold text-slate-900">
+                  {item.question}
+                </h3>
+                <p className="mt-4 text-slate-600">{item.answer}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="contact" className="bg-slate-900 px-6 py-20 text-white">
+          <div className="mx-auto max-w-7xl rounded-[2rem] border border-white/10 bg-slate-950/90 p-10 shadow-2xl">
+            <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+              <div>
+                <p className="text-sm uppercase tracking-[0.24em] text-slate-400">
+                  Contact
+                </p>
+                <h2 className="mt-4 text-4xl font-semibold">
+                  Questions or order help?
+                </h2>
+                <p className="mt-5 max-w-xl leading-8 text-slate-300">
+                  Reach out anytime for support with your order or payment.
+                </p>
+              </div>
+              <div className="space-y-4 text-slate-300">
+                <p>
+                  <span className="font-semibold text-white">Email:</span>{" "}
+                  <a
+                    href="mailto:williammakismd1946@outlook.com"
+                    className="text-cyan-300 hover:text-cyan-200"
+                  >
+                    williammakismd1946@outlook.com
+                  </a>
+                </p>
+                <p>
+                  <span className="font-semibold text-white">WhatsApp:</span>{" "}
+                  <a
+                    href="https://wa.me/12134201622"
+                    className="text-cyan-300 hover:text-cyan-200"
+                  >
+                    +1 213 420 1622
+                  </a>
+                </p>
+                {/* <p>123 Wellness Avenue, Suite 101, Austin, TX</p> */}
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="border-t border-slate-200 bg-white px-6 py-10 text-slate-700">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">
+              Dr William Makis MD
+            </p>
+            <p className="mt-3 max-w-xl text-sm leading-6">
+              Licensed pharmacy with fast US shipping, physician oversight, and
+              secure order processing.
+            </p>
+          </div>
+          <div className="space-y-2 text-sm">
+            {/* <p>123 Wellness Avenue, Austin, TX</p> */}
+            <p>williammakismd1946@outlook.com</p>
+            <p>WhatsApp: +1 213 420 1622</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
