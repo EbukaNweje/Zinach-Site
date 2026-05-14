@@ -42,6 +42,26 @@ export default function Footer() {
               <li>Email: williammakismd1946@outlook.com</li>
               <li>Phone: +1 213 420 1622</li>
               <li>Hours: Mon - Fri, 9AM - 5PM EST</li>
+              <li>
+                <a
+                  href="https://www.facebook.com/share/1HJPs4dkBa/?mibextid=wwXIfr"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="hover:text-white"
+                >
+                  Facebook share
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://t.me/Dr_William_Makis_MD"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="hover:text-white"
+                >
+                  Telegram
+                </a>
+              </li>
             </ul>
           </div>
         </div>

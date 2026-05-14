@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { fetchProducts, Product } from "../lib/products";
 import AddToCartButton from "../components/AddToCartButton";
+import TestimonialsCarousel from "../components/TestimonialsCarousel";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,39 @@ const faqs = [
     question: "Is payment required before shipping?",
     answer:
       "Yes. Orders are only processed and shipped after payment is confirmed and cleared.",
+  },
+];
+
+const testimonials = [
+  {
+    quote:
+      "Fast shipping, clear payment options, and supportive customer care — the whole experience felt safe and reliable.",
+    author: "Samantha R.",
+    role: "Verified patient",
+  },
+  {
+    quote:
+      "Great service from start to finish. The pharmacy answered my questions and delivered quickly.",
+    author: "Mark T.",
+    role: "Repeat customer",
+  },
+  {
+    quote:
+      "I appreciated the clear communication and fast delivery. The order arrived exactly as promised.",
+    author: "Aisha K.",
+    role: "First-time buyer",
+  },
+  {
+    quote:
+      "The physician review and secure checkout gave me confidence to place my order online.",
+    author: "James L.",
+    role: "Returning customer",
+  },
+  {
+    quote:
+      "Helpful support and a smooth experience. I felt well taken care of from payment to delivery.",
+    author: "Maria P.",
+    role: "Satisfied patient",
   },
 ];
 
@@ -104,8 +138,6 @@ export default async function Home() {
             </div>
           </div>
         </section>
-
-        {/* ── Products ── */}
         <section id="products" className="mx-auto max-w-7xl px-6 py-20">
           <div className="mb-12 flex flex-col gap-4 text-center">
             <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
@@ -189,6 +221,8 @@ export default async function Home() {
             </div>
           )}
         </section>
+
+        <TestimonialsCarousel testimonials={testimonials} />
 
         {/* ── About ── */}
         <section id="about" className="bg-slate-950 px-6 py-20 text-white">
