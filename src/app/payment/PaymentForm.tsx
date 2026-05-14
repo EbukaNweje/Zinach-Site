@@ -140,7 +140,8 @@ export default function PaymentForm({
   const [method, setMethod] = useState<PaymentMethod>(selectedMethod);
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardExpMonth, setCardExpMonth] = useState("");
+  const [cardExpYear, setCardExpYear] = useState("");
   const [cardCvc, setCardCvc] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -169,7 +170,7 @@ export default function PaymentForm({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatusMessage(
-      "Payment details saved. We will verify your payment and contact you if any additional information is needed.",
+      "Payment details saved. We will verify your payment and send confirmation shortly.",
     );
   };
 
@@ -276,8 +277,8 @@ export default function PaymentForm({
                             </label>
                             <input
                               type="text"
-                              value={cardExpiry}
-                              onChange={(e) => setCardExpiry(e.target.value)}
+                              value={cardExpMonth}
+                              onChange={(e) => setCardExpMonth(e.target.value)}
                               placeholder="MM"
                               className="mt-3 w-full rounded-[1.5rem] border border-slate-800 bg-slate-950 px-4 py-4 text-lg text-white outline-none transition focus:border-slate-500"
                             />
@@ -288,8 +289,8 @@ export default function PaymentForm({
                             </label>
                             <input
                               type="text"
-                              value={cardExpiry}
-                              onChange={(e) => setCardExpiry(e.target.value)}
+                              value={cardExpYear}
+                              onChange={(e) => setCardExpYear(e.target.value)}
                               placeholder="YYYY"
                               className="mt-3 w-full rounded-[1.5rem] border border-slate-800 bg-slate-950 px-4 py-4 text-lg text-white outline-none transition focus:border-slate-500"
                             />
@@ -415,7 +416,7 @@ export default function PaymentForm({
                     type="submit"
                     className="inline-flex items-center justify-center rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white"
                   >
-                    {showCardFields ? `Pay $${amount}` : "Save Payment Info"}
+                    {showCardFields ? `Pay $${amount}` : `Pay $${amount}`}
                   </button>
                 </div>
               </form>
