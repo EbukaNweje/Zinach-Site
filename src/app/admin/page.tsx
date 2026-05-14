@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, ChangeEvent } from "react";
 import Script from "next/script";
 
-const ADMIN_PASSWORD = "zinach2024";
+const ADMIN_PASSWORD = "Zinach2026";
 
 const metrics = [
   { label: "Total orders", value: "158" },
