@@ -31,6 +31,28 @@ app.use("/api/cart", cartRoutes);
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
+// ── Error handling middleware ─────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error("Error:", err.message);
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({
+      success: false,
+      message:
+        "File too large. Maximum size is 5MB for products, 10MB for payment proofs.",
+    });
+  }
+  if (err.name === "MulterError") {
+    return res.status(400).json({
+      success: false,
+      message: `Upload error: ${err.message}`,
+    });
+  }
+  res.status(500).json({
+    success: false,
+    message: err.message || "Internal server error",
+  });
+});
+
 // ── MongoDB ───────────────────────────────────────────────────────────────────
 mongoose
   .connect(process.env.MONGODB_URI)
