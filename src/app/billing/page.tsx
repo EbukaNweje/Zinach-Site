@@ -348,7 +348,7 @@ export default function BillingPage() {
                           { label: "PayPal", value: "PayPal" },
                           { label: "Venmo", value: "Venmo" },
                           { label: "Credit Card", value: "Credit Card" },
-                          { label: "BTC address", value: "BTC address" },
+                          { label: "BTC", value: "BTC" },
                         ].map((option) => (
                           <label
                             key={option.value}

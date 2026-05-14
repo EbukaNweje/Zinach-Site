@@ -20,16 +20,18 @@ const normalizeMethod = (value: string | null): PaymentMethod => {
     paypal: "PayPal",
     venmo: "Venmo",
     "credit card": "Credit Card",
-    "creditcard": "Credit Card",
-    "btc address": "BTC address",
-    btc: "BTC address",
-    btcaddress: "BTC address",
+    creditcard: "Credit Card",
+    "btc address": "BTC",
+    btc: "BTC",
+    btcaddress: "BTC",
   };
 
-  return methodMap[normalized] ??
+  return (
+    methodMap[normalized] ??
     (Object.values(methodMap).includes(value as PaymentMethod)
       ? (value as PaymentMethod)
-      : "Chime");
+      : "Chime")
+  );
 };
 
 export default function PaymentPage({ searchParams }: PaymentPageProps) {

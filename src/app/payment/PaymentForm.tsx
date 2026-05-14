@@ -10,7 +10,7 @@ export type PaymentMethod =
   | "PayPal"
   | "Venmo"
   | "Credit Card"
-  | "BTC address";
+  | "BTC";
 
 type PaymentField = {
   label: string;
@@ -107,7 +107,7 @@ const methodDetails: Record<PaymentMethod, PaymentMethodDetails> = {
       "Keep the receipt confirmation.",
     ],
   },
-  "BTC address": {
+  BTC: {
     title: "BTC Payment Information",
     note: "Copy the Bitcoin address below to complete your payment.",
     fields: [{ label: "BTC", value: "bc1qdrwmakisbtc0000000000000000" }],
@@ -126,7 +126,7 @@ const paymentMethods: PaymentMethod[] = [
   "Zelle",
   "PayPal",
   "Venmo",
-  "BTC address",
+  "BTC",
   "Credit Card",
 ];
 
