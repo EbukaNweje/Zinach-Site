@@ -1,48 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState, ChangeEvent } from "react";
+import { useState, ChangeEvent, useEffect, useCallback } from "react";
 import Script from "next/script";
 
 const ADMIN_PASSWORD = "Zinach2026";
 
-const metrics = [
-  { label: "Total orders", value: "158" },
-  { label: "Revenue", value: "$24,600" },
-  { label: "Pending payments", value: "12" },
-  { label: "Active customers", value: "89" },
-];
-
-const recentOrders = [
-  {
-    id: "ORD-1023",
-    customer: "Megan P.",
-    amount: "$180",
-    method: "Venmo",
-    status: "Paid",
-  },
-  {
-    id: "ORD-1024",
-    customer: "James L.",
-    amount: "$290",
-    method: "Credit Card",
-    status: "Processing",
-  },
-  {
-    id: "ORD-1025",
-    customer: "Sofia R.",
-    amount: "$75",
-    method: "Zelle",
-    status: "Paid",
-  },
-  {
-    id: "ORD-1026",
-    customer: "Aiden K.",
-    amount: "$132",
-    method: "Chime",
-    status: "Pending",
-  },
-];
+type LiveOrder = {
+  _id: string;
+  orderNumber: string;
+  customer: { name: string; email: string };
+  total: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  createdAt: string;
+};
 
 const paymentMethodFields = {
   Chime: [
@@ -98,6 +70,66 @@ export default function AdminPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  // ── Live orders & metrics ──────────────────────────────────────────────────
+  const [liveOrders, setLiveOrders] = useState<LiveOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
+  const fetchOrders = useCallback(async () => {
+    setOrdersLoading(true);
+    try {
+      const res = await fetch("/api/orders");
+      const data = await res.json();
+      if (data.success) setLiveOrders(data.data);
+    } catch {
+      // silently fail
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) fetchOrders();
+  }, [isAuthenticated, fetchOrders]);
+
+  const metrics = [
+    { label: "Total orders", value: String(liveOrders.length) },
+    {
+      label: "Revenue",
+      value: `$${liveOrders
+        .filter((o) => o.paymentStatus === "paid")
+        .reduce(
+          (sum, o) => sum + Number(o.total.replace(/[^0-9.]/g, "") || 0),
+          0,
+        )
+        .toFixed(2)}`,
+    },
+    {
+      label: "Pending payments",
+      value: String(
+        liveOrders.filter((o) => o.paymentStatus === "pending").length,
+      ),
+    },
+    {
+      label: "Processing",
+      value: String(
+        liveOrders.filter((o) => o.paymentStatus === "processing").length,
+      ),
+    },
+  ];
+
+  const handleMarkPaid = async (id: string) => {
+    try {
+      const res = await fetch(`/api/orders/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paymentStatus: "paid" }),
+      });
+      if (res.ok) fetchOrders();
+    } catch {
+      // silently fail
+    }
+  };
+
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (loginPassword === ADMIN_PASSWORD) {
@@ -119,8 +151,10 @@ export default function AdminPage() {
   });
   const [products, setProducts] = useState<Product[]>([]);
   const [productMessage, setProductMessage] = useState("");
+  const [productSubmitting, setProductSubmitting] = useState(false);
   const [newPackageLabel, setNewPackageLabel] = useState("");
   const [newPackagePrice, setNewPackagePrice] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Chime");
   const [paymentFields, setPaymentFields] = useState<Record<string, string>>({
@@ -166,7 +200,8 @@ export default function AdminPage() {
 
   // Handle file input for image upload
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files && e.target.files[0];
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -179,21 +214,50 @@ export default function AdminPage() {
     }
   };
 
-  const handleProductSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleProductSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
-    setProducts((current) => [...current, product]);
-    setProduct({
-      name: "",
-      brand: "",
-      price: "",
-      description: "",
-      image: "",
-      packageOptions: [],
-    });
-    setNewPackageLabel("");
-    setNewPackagePrice("");
-    setProductMessage("Product added successfully.");
-    window.setTimeout(() => setProductMessage(""), 3000);
+    setProductSubmitting(true);
+    setProductMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("name", product.name);
+      formData.append("brand", product.brand);
+      formData.append("price", product.price);
+      formData.append("description", product.description);
+      formData.append("packageOptions", JSON.stringify(product.packageOptions));
+      if (imageFile) formData.append("image", imageFile);
+
+      const res = await fetch("/api/products", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to add product.");
+
+      setProducts((current) => [...current, data.data]);
+      setProduct({
+        name: "",
+        brand: "",
+        price: "",
+        description: "",
+        image: "",
+        packageOptions: [],
+      });
+      setImageFile(null);
+      setNewPackageLabel("");
+      setNewPackagePrice("");
+      setProductMessage("Product added successfully.");
+    } catch (err: unknown) {
+      setProductMessage(
+        err instanceof Error ? err.message : "Error adding product.",
+      );
+    } finally {
+      setProductSubmitting(false);
+      window.setTimeout(() => setProductMessage(""), 4000);
+    }
   };
 
   const handlePaymentFieldChange = (field: string, value: string) => {
@@ -206,14 +270,35 @@ export default function AdminPage() {
     setPaymentMessage("");
   };
 
-  const handlePaymentSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handlePaymentSubmit = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
-    setSavedPaymentInfo((current) => ({
-      ...current,
-      [paymentMethod]: { ...paymentFields },
-    }));
-    setPaymentMessage(`${paymentMethod} payment info updated.`);
-    window.setTimeout(() => setPaymentMessage(""), 3000);
+
+    try {
+      const res = await fetch(
+        `/api/payments/${encodeURIComponent(paymentMethod)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: paymentFields }),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to save.");
+
+      setSavedPaymentInfo((current) => ({
+        ...current,
+        [paymentMethod]: { ...paymentFields },
+      }));
+      setPaymentMessage(`${paymentMethod} payment info updated.`);
+    } catch (err: unknown) {
+      setPaymentMessage(
+        err instanceof Error ? err.message : "Error saving payment info.",
+      );
+    } finally {
+      window.setTimeout(() => setPaymentMessage(""), 4000);
+    }
   };
 
   const fieldDefinitions = paymentMethodFields[paymentMethod];
@@ -475,9 +560,10 @@ export default function AdminPage() {
 
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    disabled={productSubmitting}
+                    className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Add product
+                    {productSubmitting ? "Adding…" : "Add product"}
                   </button>
                 </form>
 
@@ -631,55 +717,89 @@ export default function AdminPage() {
                       Latest activity
                     </h2>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-600">
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">
                     Live
                   </span>
+                  <button
+                    onClick={fetchOrders}
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Refresh
+                  </button>
                 </div>
 
-                <div className="overflow-hidden rounded-[1.75rem] border border-slate-200">
-                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                    <thead className="bg-slate-50 text-slate-500">
-                      <tr>
-                        <th className="px-6 py-4 font-semibold">Order</th>
-                        <th className="px-6 py-4 font-semibold">Customer</th>
-                        <th className="px-6 py-4 font-semibold">Amount</th>
-                        <th className="px-6 py-4 font-semibold">Method</th>
-                        <th className="px-6 py-4 font-semibold">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 bg-white">
-                      {recentOrders.map((order) => (
-                        <tr key={order.id}>
-                          <td className="px-6 py-4 font-semibold text-slate-900">
-                            {order.id}
-                          </td>
-                          <td className="px-6 py-4 text-slate-600">
-                            {order.customer}
-                          </td>
-                          <td className="px-6 py-4 text-slate-900">
-                            {order.amount}
-                          </td>
-                          <td className="px-6 py-4 text-slate-600">
-                            {order.method}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                                order.status === "Paid"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : order.status === "Processing"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-slate-100 text-slate-700"
-                              }`}
-                            >
-                              {order.status}
-                            </span>
-                          </td>
+                {ordersLoading ? (
+                  <p className="py-8 text-center text-sm text-slate-400">
+                    Loading orders…
+                  </p>
+                ) : liveOrders.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+                    <p className="text-sm text-slate-500">No orders yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-[1.75rem] border border-slate-200">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                      <thead className="bg-slate-50 text-slate-500">
+                        <tr>
+                          <th className="px-6 py-4 font-semibold">Order</th>
+                          <th className="px-6 py-4 font-semibold">Customer</th>
+                          <th className="px-6 py-4 font-semibold">Amount</th>
+                          <th className="px-6 py-4 font-semibold">Method</th>
+                          <th className="px-6 py-4 font-semibold">Status</th>
+                          <th className="px-6 py-4 font-semibold">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200 bg-white">
+                        {liveOrders.map((order) => (
+                          <tr key={order._id}>
+                            <td className="px-6 py-4 font-semibold text-slate-900">
+                              {order.orderNumber}
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="text-slate-900">
+                                {order.customer.name}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {order.customer.email}
+                              </p>
+                            </td>
+                            <td className="px-6 py-4 font-semibold text-slate-900">
+                              ${order.total}
+                            </td>
+                            <td className="px-6 py-4 text-slate-600">
+                              {order.paymentMethod}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                  order.paymentStatus === "paid"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : order.paymentStatus === "processing"
+                                      ? "bg-amber-100 text-amber-700"
+                                      : order.paymentStatus === "failed"
+                                        ? "bg-red-100 text-red-700"
+                                        : "bg-slate-100 text-slate-700"
+                                }`}
+                              >
+                                {order.paymentStatus}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              {order.paymentStatus !== "paid" && (
+                                <button
+                                  onClick={() => handleMarkPaid(order._id)}
+                                  className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                                >
+                                  Mark paid
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </section>
             </div>
           </div>

@@ -1,9 +1,8 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { products } from "../../lib/products";
-import { getCart } from "../../lib/cart";
+import { useCart } from "../../components/CartContext";
 
 const initialForm = {
   fullName: "",
@@ -28,38 +27,35 @@ const shippingOptions = [
   { label: "UPS Express — $30.00", value: "express", fee: 30 },
 ];
 
+const paymentMethods = [
+  "Chime",
+  "Apple Pay",
+  "Zelle",
+  "PayPal",
+  "Venmo",
+  "Credit Card",
+  "BTC",
+];
+
 export default function BillingPage() {
   const router = useRouter();
+  const { cartItems, loading } = useCart();
   const [form, setForm] = useState(initialForm);
-  const [cartEntries, setCartEntries] = useState<
-    {
-      slug: string;
-      quantity: number;
-      product: (typeof products)[number] | null;
-    }[]
-  >([]);
 
-  useEffect(() => {
-    const cart = getCart();
-    setCartEntries(
-      cart.map((item) => ({
-        ...item,
-        product: products.find((product) => product.slug === item.slug) ?? null,
-      })),
-    );
-  }, []);
+  function updateField(field: string, value: string | boolean) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
 
   const subtotal = useMemo(() => {
-    return cartEntries.reduce((sum, entry) => {
-      const price = entry.product?.price.replace(/[^0-9.]/g, "");
-      return sum + (price ? Number(price) * entry.quantity : 0);
+    return cartItems.reduce((sum, item) => {
+      const price = Number(item.price.replace(/[^0-9.]/g, "")) || 0;
+      return sum + price * item.quantity;
     }, 0);
-  }, [cartEntries]);
+  }, [cartItems]);
 
   const shippingFee = useMemo(
     () =>
-      shippingOptions.find((option) => option.value === form.shippingMethod)
-        ?.fee ?? 0,
+      shippingOptions.find((o) => o.value === form.shippingMethod)?.fee ?? 0,
     [form.shippingMethod],
   );
 
@@ -67,24 +63,17 @@ export default function BillingPage() {
     () => Number(((subtotal + shippingFee) * 0.08).toFixed(2)),
     [subtotal, shippingFee],
   );
+
   const total = useMemo(
     () => subtotal + shippingFee + vat,
     [subtotal, shippingFee, vat],
   );
 
-  function updateField(field: string, value: string | boolean) {
-    setForm((current) => ({ ...current, [field]: value }));
-  }
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!form.agree) {
-      return;
-    }
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!form.agree) return;
     router.push(
-      `/payment?method=${encodeURIComponent(form.paymentMethod)}&amount=${total.toFixed(
-        2,
-      )}`,
+      `/payment?method=${encodeURIComponent(form.paymentMethod)}&amount=${total.toFixed(2)}`,
     );
   };
 
@@ -95,7 +84,8 @@ export default function BillingPage() {
           onSubmit={handleSubmit}
           className="grid gap-10 lg:grid-cols-[1.65fr_1fr]"
         >
-          <div className="rounded-[2rem] bg-white p-10 shadow-lg">
+          {/* ── Left: billing details ── */}
+          <div className="rounded-4xl bg-white p-10 shadow-lg">
             <div className="mb-6">
               <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
                 Billing
@@ -118,9 +108,7 @@ export default function BillingPage() {
                   <input
                     required
                     value={form.fullName}
-                    onChange={(event) =>
-                      updateField("fullName", event.target.value)
-                    }
+                    onChange={(e) => updateField("fullName", e.target.value)}
                     className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                   />
                 </label>
@@ -132,9 +120,7 @@ export default function BillingPage() {
                     type="email"
                     required
                     value={form.email}
-                    onChange={(event) =>
-                      updateField("email", event.target.value)
-                    }
+                    onChange={(e) => updateField("email", e.target.value)}
                     className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                   />
                 </label>
@@ -145,8 +131,8 @@ export default function BillingPage() {
                   <input
                     required
                     value={form.contactNumber}
-                    onChange={(event) =>
-                      updateField("contactNumber", event.target.value)
+                    onChange={(e) =>
+                      updateField("contactNumber", e.target.value)
                     }
                     className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                   />
@@ -165,8 +151,8 @@ export default function BillingPage() {
                     <input
                       required
                       value={form.streetAddress}
-                      onChange={(event) =>
-                        updateField("streetAddress", event.target.value)
+                      onChange={(e) =>
+                        updateField("streetAddress", e.target.value)
                       }
                       className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                     />
@@ -177,8 +163,8 @@ export default function BillingPage() {
                     </span>
                     <input
                       value={form.streetAddress2}
-                      onChange={(event) =>
-                        updateField("streetAddress2", event.target.value)
+                      onChange={(e) =>
+                        updateField("streetAddress2", e.target.value)
                       }
                       className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                     />
@@ -190,9 +176,7 @@ export default function BillingPage() {
                     <input
                       required
                       value={form.city}
-                      onChange={(event) =>
-                        updateField("city", event.target.value)
-                      }
+                      onChange={(e) => updateField("city", e.target.value)}
                       className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                     />
                   </label>
@@ -203,8 +187,8 @@ export default function BillingPage() {
                     <input
                       required
                       value={form.stateProvince}
-                      onChange={(event) =>
-                        updateField("stateProvince", event.target.value)
+                      onChange={(e) =>
+                        updateField("stateProvince", e.target.value)
                       }
                       className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                     />
@@ -216,8 +200,8 @@ export default function BillingPage() {
                     <input
                       required
                       value={form.postalCode}
-                      onChange={(event) =>
-                        updateField("postalCode", event.target.value)
+                      onChange={(e) =>
+                        updateField("postalCode", e.target.value)
                       }
                       className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                     />
@@ -229,45 +213,41 @@ export default function BillingPage() {
                     <input
                       required
                       value={form.country}
-                      onChange={(event) =>
-                        updateField("country", event.target.value)
-                      }
+                      onChange={(e) => updateField("country", e.target.value)}
                       className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
                     />
                   </label>
                 </div>
               </div>
 
-              <div className="grid gap-6 rounded-[2rem] bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                  <label className="flex items-center gap-3 text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={form.sameShipping}
-                      onChange={(event) =>
-                        updateField("sameShipping", event.target.checked)
-                      }
-                      className="h-5 w-5 rounded border-slate-300 text-slate-900"
-                    />
-                    Shipping address same as billing address?
-                  </label>
-                  <label className="flex items-center gap-3 text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={form.expressShipping}
-                      onChange={(event) =>
-                        updateField("expressShipping", event.target.checked)
-                      }
-                      className="h-5 w-5 rounded border-slate-300 text-slate-900"
-                    />
-                    Express Shipping?
-                  </label>
-                </div>
+              <div className="flex flex-wrap gap-6 rounded-3xl border border-slate-200 bg-white p-5">
+                <label className="flex items-center gap-3 text-slate-800 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.sameShipping}
+                    onChange={(e) =>
+                      updateField("sameShipping", e.target.checked)
+                    }
+                    className="h-5 w-5 rounded border-slate-300"
+                  />
+                  Shipping address same as billing
+                </label>
+                <label className="flex items-center gap-3 text-slate-800 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.expressShipping}
+                    onChange={(e) =>
+                      updateField("expressShipping", e.target.checked)
+                    }
+                    className="h-5 w-5 rounded border-slate-300"
+                  />
+                  Express Shipping
+                </label>
               </div>
 
-              <div className="rounded-[2rem] bg-slate-50 p-6 text-slate-700">
+              <div className="rounded-4xl bg-slate-50 p-6 text-slate-700">
                 <h2 className="text-lg font-semibold text-slate-900">
-                  Payment Authorization & Order Processing Agreement
+                  Payment Authorization &amp; Order Processing Agreement
                 </h2>
                 <p className="mt-4 leading-7">
                   By proceeding with this purchase, you acknowledge and agree
@@ -275,167 +255,155 @@ export default function BillingPage() {
                   before your order can be processed, prepared, and dispatched.
                   All orders are subject to payment verification, and no
                   shipment will be initiated until funds have been received in
-                  full and cleared through our payment system.
+                  full.
                 </p>
               </div>
             </div>
           </div>
 
+          {/* ── Right: order summary ── */}
           <aside className="space-y-6">
-            <div className="sticky top-8 rounded-[2rem] bg-white p-8 shadow-lg">
-              <div className="mb-6">
-                <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
-                  Order summary
-                </p>
-                <h2 className="mt-4 text-3xl font-semibold text-slate-900">
-                  Cart total
-                </h2>
-                <p className="mt-3 text-slate-600">
-                  Review shipping, VAT, and the final total before checkout.
-                </p>
-              </div>
+            <div className="sticky top-8 rounded-4xl bg-white p-8 shadow-lg">
+              <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
+                Order summary
+              </p>
+              <h2 className="mt-4 text-3xl font-semibold text-slate-900">
+                Cart total
+              </h2>
 
-              {cartEntries.length === 0 ? (
-                <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-600">
-                  Your cart is empty. Add products first to see the order
-                  summary.
+              {loading ? (
+                <p className="mt-6 text-sm text-slate-400">Loading cart…</p>
+              ) : cartItems.length === 0 ? (
+                <div className="mt-6 rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-slate-500 text-sm">
+                  Your cart is empty. Add products first.
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    {cartEntries.map((entry) => (
+                <div className="mt-6 space-y-6">
+                  {/* Items */}
+                  <div className="space-y-3">
+                    {cartItems.map((item) => (
                       <div
-                        key={entry.slug}
-                        className="rounded-3xl border border-slate-200 bg-slate-50 p-4"
+                        key={`${item.slug}-${item.packageOption}`}
+                        className="flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3"
                       >
-                        <div className="flex items-center justify-between gap-4">
-                          <div>
-                            <p className="font-semibold text-slate-900">
-                              {entry.product?.name || entry.slug}
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {item.name}
+                          </p>
+                          {item.packageOption && (
+                            <p className="text-xs text-slate-400">
+                              {item.packageOption}
                             </p>
-                            <p className="text-sm text-slate-600">
-                              Qty {entry.quantity}
-                            </p>
-                          </div>
-                          <p className="font-semibold text-slate-900">
-                            $
-                            {(
-                              (entry.product?.price.replace(/[^0-9.]/g, "")
-                                ? Number(
-                                    entry.product?.price.replace(
-                                      /[^0-9.]/g,
-                                      "",
-                                    ),
-                                  )
-                                : 0) * entry.quantity
-                            ).toFixed(2)}
+                          )}
+                          <p className="text-xs text-slate-500">
+                            Qty {item.quantity}
                           </p>
                         </div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          $
+                          {(
+                            Number(item.price.replace(/[^0-9.]/g, "")) *
+                            item.quantity
+                          ).toFixed(2)}
+                        </p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 space-y-5">
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">
-                        Payment Method*
-                      </p>
-                      <div className="mt-4 grid gap-3">
-                        {[
-                          { label: "Chime", value: "Chime" },
-                          { label: "Apple Pay", value: "Apple Pay" },
-                          { label: "Zelle", value: "Zelle" },
-                          { label: "PayPal", value: "PayPal" },
-                          { label: "Venmo", value: "Venmo" },
-                          { label: "Credit Card", value: "Credit Card" },
-                          { label: "BTC", value: "BTC" },
-                        ].map((option) => (
-                          <label
-                            key={option.value}
-                            className={`flex w-full cursor-pointer items-center justify-between rounded-3xl border p-4 transition ${
-                              form.paymentMethod === option.value
-                                ? "border-slate-900 bg-slate-900 text-white"
-                                : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
-                            }`}
-                          >
-                            <span>{option.label}</span>
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              value={option.value}
-                              checked={form.paymentMethod === option.value}
-                              onChange={(event) =>
-                                updateField("paymentMethod", event.target.value)
-                              }
-                              className="h-4 w-4 text-slate-900"
-                            />
-                          </label>
-                        ))}
-                      </div>
+                  {/* Payment method */}
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-3">
+                      Payment Method *
+                    </p>
+                    <div className="grid gap-2">
+                      {paymentMethods.map((option) => (
+                        <label
+                          key={option}
+                          className={`flex w-full cursor-pointer items-center justify-between rounded-3xl border p-4 transition ${
+                            form.paymentMethod === option
+                              ? "border-slate-900 bg-slate-900 text-white"
+                              : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                          }`}
+                        >
+                          <span className="text-sm">{option}</span>
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value={option}
+                            checked={form.paymentMethod === option}
+                            onChange={(e) =>
+                              updateField("paymentMethod", e.target.value)
+                            }
+                            className="h-4 w-4"
+                          />
+                        </label>
+                      ))}
                     </div>
-
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">
-                        Shipping method
-                      </p>
-                      <select
-                        value={form.shippingMethod}
-                        onChange={(event) =>
-                          updateField("shippingMethod", event.target.value)
-                        }
-                        className="mt-3 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
-                      >
-                        {shippingOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="space-y-3 text-slate-700">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Subtotal</span>
-                        <span>${subtotal.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Shipping fee</span>
-                        <span>${shippingFee.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span>VAT (8%)</span>
-                        <span>${vat.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    <div className="rounded-3xl bg-slate-900 p-5 text-white">
-                      <div className="flex items-center justify-between text-sm uppercase tracking-[0.24em] text-slate-400">
-                        <span>Total</span>
-                        <span>${total.toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    <label className="flex items-center gap-3 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        checked={form.agree}
-                        onChange={(event) =>
-                          updateField("agree", event.target.checked)
-                        }
-                        className="h-5 w-5 rounded border-slate-300 text-slate-900"
-                      />
-                      I have read and agree to the payment authorization and
-                      order processing agreement.
-                    </label>
-
-                    <button
-                      type="submit"
-                      disabled={!form.agree}
-                      className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-6 py-4 text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-400"
-                    >
-                      Proceed to Payment
-                    </button>
                   </div>
+
+                  {/* Shipping */}
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 mb-2">
+                      Shipping method
+                    </p>
+                    <select
+                      value={form.shippingMethod}
+                      onChange={(e) =>
+                        updateField("shippingMethod", e.target.value)
+                      }
+                      className="w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
+                    >
+                      {shippingOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Totals */}
+                  <div className="space-y-2 text-sm text-slate-600">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>${subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Shipping</span>
+                      <span>${shippingFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>VAT (8%)</span>
+                      <span>${vat.toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl bg-slate-900 p-5 text-white flex items-center justify-between">
+                    <span className="text-sm uppercase tracking-[0.24em] text-slate-400">
+                      Total
+                    </span>
+                    <span className="text-xl font-bold">
+                      ${total.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <label className="flex items-start gap-3 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={form.agree}
+                      onChange={(e) => updateField("agree", e.target.checked)}
+                      className="mt-0.5 h-5 w-5 rounded border-slate-300"
+                    />
+                    I have read and agree to the payment authorization and order
+                    processing agreement.
+                  </label>
+
+                  <button
+                    type="submit"
+                    disabled={!form.agree || cartItems.length === 0}
+                    className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-6 py-4 text-base font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-400"
+                  >
+                    Proceed to Payment
+                  </button>
                 </div>
               )}
             </div>

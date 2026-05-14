@@ -1,0 +1,120 @@
+const express = require("express");
+const router = express.Router();
+const Order = require("../models/Order");
+const { uploadPaymentProof } = require("../utils/cloudinary");
+const {
+  sendOrderConfirmation,
+  sendPaymentConfirmation,
+  sendAdminNotification,
+} = require("../utils/email");
+
+// GET /api/orders — list all orders (admin)
+router.get("/", async (_req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json({ success: true, data: orders });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/orders/:id — single order
+router.get("/:id", async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order)
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    res.json({ success: true, data: order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/orders — place a new order
+// Accepts multipart/form-data so the payment proof image can be uploaded in one shot
+router.post("/", uploadPaymentProof.single("proofImage"), async (req, res) => {
+  try {
+    const { customer, items, total, paymentMethod, notes } = req.body;
+
+    const order = new Order({
+      customer: typeof customer === "string" ? JSON.parse(customer) : customer,
+      items: typeof items === "string" ? JSON.parse(items) : items,
+      total,
+      paymentMethod,
+      notes,
+      proofImageUrl: req.file ? req.file.path : "",
+      proofImagePublicId: req.file ? req.file.filename : "",
+      paymentStatus: req.file ? "processing" : "pending",
+    });
+
+    await order.save();
+
+    // Fire emails — don't block the response if email fails
+    Promise.all([
+      sendOrderConfirmation(order).catch((e) =>
+        console.error("Order confirmation email failed:", e.message),
+      ),
+      sendAdminNotification(order).catch((e) =>
+        console.error("Admin notification email failed:", e.message),
+      ),
+    ]);
+
+    res.status(201).json({ success: true, data: order });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// PATCH /api/orders/:id/status — admin updates payment status
+router.patch("/:id/status", async (req, res) => {
+  try {
+    const { paymentStatus } = req.body;
+    const validStatuses = ["pending", "processing", "paid", "failed"];
+
+    if (!validStatuses.includes(paymentStatus)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid status" });
+    }
+
+    const order = await Order.findByIdAndUpdate(
+      req.params.id,
+      { paymentStatus },
+      { new: true },
+    );
+
+    if (!order)
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+
+    // Send payment confirmation email when admin marks as paid
+    if (paymentStatus === "paid") {
+      sendPaymentConfirmation(order).catch((e) =>
+        console.error("Payment confirmation email failed:", e.message),
+      );
+    }
+
+    res.json({ success: true, data: order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// DELETE /api/orders/:id
+router.delete("/:id", async (req, res) => {
+  try {
+    const order = await Order.findByIdAndDelete(req.params.id);
+    if (!order)
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    res.json({ success: true, message: "Order deleted" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+module.exports = router;

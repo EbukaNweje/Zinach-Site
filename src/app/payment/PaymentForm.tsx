@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import { useCart } from "@/components/CartContext";
 
 export type PaymentMethod =
   | "Chime"
@@ -137,13 +138,20 @@ export default function PaymentForm({
   selectedMethod: PaymentMethod;
   amount: string;
 }) {
+  const { cartItems, clearCart } = useCart();
   const [method, setMethod] = useState<PaymentMethod>(selectedMethod);
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpMonth, setCardExpMonth] = useState("");
   const [cardExpYear, setCardExpYear] = useState("");
   const [cardCvc, setCardCvc] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string>("");
 
@@ -167,11 +175,70 @@ export default function PaymentForm({
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setStatusMessage(
-      "Payment details saved. We will verify your payment and send confirmation shortly.",
-    );
+
+    if (!customerName || !customerEmail) {
+      setStatusMessage("Please enter your name and email.");
+      return;
+    }
+
+    setSubmitStatus("submitting");
+    setStatusMessage(null);
+
+    try {
+      const formData = new FormData();
+
+      formData.append(
+        "customer",
+        JSON.stringify({
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
+        }),
+      );
+
+      // Build items from cart, or fall back to a generic entry
+      const items =
+        cartItems && cartItems.length > 0
+          ? cartItems.map((item) => ({
+              name: item.name,
+              brand: item.brand ?? "",
+              price: item.price,
+              quantity: item.quantity ?? 1,
+              packageOption: item.packageOption ?? "",
+            }))
+          : [{ name: "Order", price: amount, quantity: 1 }];
+
+      formData.append("items", JSON.stringify(items));
+      formData.append("total", amount);
+      formData.append("paymentMethod", method);
+
+      if (paymentProof) {
+        formData.append("proofImage", paymentProof);
+      }
+
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to place order.");
+
+      clearCart?.();
+      setSubmitStatus("success");
+      setStatusMessage(
+        `Order ${data.data?.orderNumber ?? ""} placed! Check your email for confirmation.`,
+      );
+    } catch (err: unknown) {
+      setSubmitStatus("error");
+      setStatusMessage(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    }
   };
 
   return (
@@ -239,6 +306,35 @@ export default function PaymentForm({
                 onSubmit={handleSubmit}
                 className="space-y-6 rounded-[2rem] border border-slate-800 bg-slate-950 p-6"
               >
+                {/* Customer details */}
+                <div className="space-y-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                    Your details
+                  </p>
+                  <input
+                    type="text"
+                    required
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Full name *"
+                    className="w-full rounded-3xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
+                  />
+                  <input
+                    type="email"
+                    required
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="Email address * (for order confirmation)"
+                    className="w-full rounded-3xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
+                  />
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Phone number (optional)"
+                    className="w-full rounded-3xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
+                  />
+                </div>
                 {showCardFields ? (
                   <div className="space-y-6">
                     <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-slate-950/20">
@@ -400,7 +496,15 @@ export default function PaymentForm({
                 )}
 
                 {statusMessage && (
-                  <div className="rounded-3xl border border-emerald-700 bg-emerald-950/50 p-4 text-sm text-emerald-300">
+                  <div
+                    className={`rounded-3xl border p-4 text-sm ${
+                      submitStatus === "success"
+                        ? "border-emerald-700 bg-emerald-950/50 text-emerald-300"
+                        : submitStatus === "error"
+                          ? "border-red-700 bg-red-950/50 text-red-300"
+                          : "border-slate-700 bg-slate-900 text-slate-300"
+                    }`}
+                  >
                     {statusMessage}
                   </div>
                 )}
@@ -414,9 +518,17 @@ export default function PaymentForm({
                   </Link>
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white"
+                    disabled={
+                      submitStatus === "submitting" ||
+                      submitStatus === "success"
+                    }
+                    className="inline-flex items-center justify-center rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {showCardFields ? `Pay $${amount}` : `Pay $${amount}`}
+                    {submitStatus === "submitting"
+                      ? "Placing order…"
+                      : submitStatus === "success"
+                        ? "Order placed ✓"
+                        : `Pay $${amount}`}
                   </button>
                 </div>
               </form>

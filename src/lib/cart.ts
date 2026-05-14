@@ -1,55 +1,74 @@
+import { getSessionId } from "./session";
+
 export type CartItem = {
+  productId: string;
   slug: string;
+  name: string;
+  brand?: string;
+  price: string;
+  image?: string;
+  packageOption?: string;
   quantity: number;
 };
 
-const STORAGE_KEY = "dr-william-makis-cart";
-
-export function getCart(): CartItem[] {
-  if (typeof window === "undefined") return [];
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw) as CartItem[];
-    return Array.isArray(parsed)
-      ? parsed.map((item) => ({
-          slug: item.slug,
-          quantity: typeof item.quantity === "number" ? item.quantity : 1,
-        }))
-      : [];
-  } catch {
-    return [];
-  }
+function headers() {
+  return {
+    "Content-Type": "application/json",
+    "x-session-id": getSessionId(),
+  };
 }
 
-export function saveCart(items: CartItem[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+export async function fetchCart(): Promise<CartItem[]> {
+  const res = await fetch("/api/cart", {
+    headers: { "x-session-id": getSessionId() },
+    cache: "no-store",
+  });
+  const data = await res.json();
+  return data.success ? data.data : [];
 }
 
-export function addToCart(slug: string) {
-  const cart = getCart();
-  const existing = cart.find((item) => item.slug === slug);
-  if (existing) {
-    existing.quantity += 1;
-  } else {
-    cart.push({ slug, quantity: 1 });
-  }
-  saveCart(cart);
+export async function addToCart(
+  item: Omit<CartItem, "quantity"> & { quantity?: number },
+): Promise<CartItem[]> {
+  const res = await fetch("/api/cart/add", {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ ...item, quantity: item.quantity ?? 1 }),
+  });
+  const data = await res.json();
+  return data.success ? data.data : [];
 }
 
-export function removeFromCart(slug: string) {
-  const cart = getCart().filter((item) => item.slug !== slug);
-  saveCart(cart);
+export async function removeFromCart(
+  slug: string,
+  packageOption = "",
+): Promise<CartItem[]> {
+  const res = await fetch("/api/cart/remove", {
+    method: "DELETE",
+    headers: headers(),
+    body: JSON.stringify({ slug, packageOption }),
+  });
+  const data = await res.json();
+  return data.success ? data.data : [];
 }
 
-export function updateCartQuantity(slug: string, quantity: number) {
-  const cart = getCart().map((item) =>
-    item.slug === slug ? { ...item, quantity: Math.max(0, quantity) } : item,
-  );
-  saveCart(cart.filter((item) => item.quantity > 0));
+export async function updateCartQuantity(
+  slug: string,
+  quantity: number,
+  packageOption = "",
+): Promise<CartItem[]> {
+  const res = await fetch("/api/cart/update", {
+    method: "PATCH",
+    headers: headers(),
+    body: JSON.stringify({ slug, quantity, packageOption }),
+  });
+  const data = await res.json();
+  return data.success ? data.data : [];
 }
 
-export function clearCart() {
-  saveCart([]);
+export async function clearCart(): Promise<void> {
+  await fetch("/api/cart/clear", {
+    method: "DELETE",
+    headers: headers(),
+  });
 }

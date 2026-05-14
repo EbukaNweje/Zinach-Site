@@ -1,6 +1,9 @@
 import Link from "next/link";
-import { products } from "../lib/products";
+import Image from "next/image";
+import { fetchProducts, Product } from "../lib/products";
 import AddToCartButton from "../components/AddToCartButton";
+
+export const dynamic = "force-dynamic";
 
 const faqs = [
   {
@@ -25,10 +28,13 @@ const faqs = [
   },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const products = await fetchProducts();
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <main>
+        {/* ── Hero ── */}
         <section
           id="home"
           className="relative overflow-hidden px-6 py-20 text-white"
@@ -99,55 +105,92 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Products ── */}
         <section id="products" className="mx-auto max-w-7xl px-6 py-20">
           <div className="mb-12 flex flex-col gap-4 text-center">
             <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
               Product List
             </p>
             <h2 className="text-4xl font-semibold text-slate-900">
-              Our Most Popular Ivermectin Kits
+              Our Most Popular Products
             </h2>
             <p className="mx-auto max-w-2xl text-slate-600">
               Choose the right medication for your needs and complete your order
               in the billing section.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {products.map((product) => (
-              <article
-                key={product.name}
-                className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+
+          {products.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-16 text-center">
+              <p className="text-slate-500">No Products available</p>
+              <Link
+                href="/products"
+                className="mt-6 inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800"
               >
-                <div className="overflow-hidden rounded-[1.75rem] bg-slate-50">
-                  <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 via-slate-200 to-slate-100" />
-                </div>
-                <span className="mt-6 inline-flex rounded-full bg-slate-100 px-4 py-2 text-xs uppercase tracking-[0.24em] text-slate-500">
-                  {product.brand}
-                </span>
-                <h3 className="mt-4 text-2xl font-semibold text-slate-900">
-                  {product.name}
-                </h3>
-                <div className="mt-3 flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
-                      per capsule
-                    </p>
-                    <p className="text-3xl font-bold text-slate-900">
-                      {product.price}
-                    </p>
+                Browse Shop
+              </Link>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-3">
+              {products.slice(0, 3).map((product: Product) => (
+                <article
+                  key={product._id}
+                  className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="overflow-hidden rounded-[1.75rem] bg-slate-50">
+                    {product.image ? (
+                      <div className="relative aspect-[4/3] w-full">
+                        <Image
+                          src={product.image}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 via-slate-200 to-slate-100" />
+                    )}
                   </div>
-                </div>
-                <select className="mt-6 w-full rounded-[1.5rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400">
-                  <option>— Select option —</option>
-                </select>
-                <div className="mt-5">
-                  <AddToCartButton product={product} />
-                </div>
-              </article>
-            ))}
-          </div>
+                  <span className="mt-6 inline-flex rounded-full bg-slate-100 px-4 py-2 text-xs uppercase tracking-[0.24em] text-slate-500">
+                    {product.brand}
+                  </span>
+                  <h3 className="mt-4 text-2xl font-semibold text-slate-900">
+                    {product.name}
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-500 line-clamp-2">
+                    {product.description}
+                  </p>
+                  <p className="mt-3 text-3xl font-bold text-slate-900">
+                    {product.price}
+                  </p>
+                  <div className="mt-5 flex gap-3">
+                    <AddToCartButton product={product} />
+                    <Link
+                      href={`/product/${product.slug}`}
+                      className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                    >
+                      Details
+                    </Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {products.length > 3 && (
+            <div className="mt-10 text-center">
+              <Link
+                href="/products"
+                className="inline-flex items-center justify-center rounded-full bg-slate-900 px-8 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+              >
+                View all products
+              </Link>
+            </div>
+          )}
         </section>
 
+        {/* ── About ── */}
         <section id="about" className="bg-slate-950 px-6 py-20 text-white">
           <div className="mx-auto max-w-7xl">
             <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
@@ -183,6 +226,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── FAQ ── */}
         <section id="faq" className="mx-auto max-w-7xl px-6 py-20">
           <div className="mb-12 text-center">
             <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
@@ -207,6 +251,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Contact ── */}
         <section id="contact" className="bg-slate-900 px-6 py-20 text-white">
           <div className="mx-auto max-w-7xl rounded-[2rem] border border-white/10 bg-slate-950/90 p-10 shadow-2xl">
             <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
@@ -240,7 +285,6 @@ export default function Home() {
                     +1 213 420 1622
                   </a>
                 </p>
-                {/* <p>123 Wellness Avenue, Suite 101, Austin, TX</p> */}
               </div>
             </div>
           </div>
@@ -259,7 +303,6 @@ export default function Home() {
             </p>
           </div>
           <div className="space-y-2 text-sm">
-            {/* <p>123 Wellness Avenue, Austin, TX</p> */}
             <p>williammakismd1946@outlook.com</p>
             <p>WhatsApp: +1 213 420 1622</p>
           </div>
