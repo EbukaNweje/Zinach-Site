@@ -17,6 +17,7 @@ export default function TestimonialsCarousel({
 }: TestimonialsCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (testimonials.length === 0) return;
@@ -29,13 +30,14 @@ export default function TestimonialsCarousel({
   }, [testimonials.length]);
 
   useEffect(() => {
+    const scrollContainer = containerRef.current;
     const currentItem = itemRefs.current[activeIndex];
-    if (!currentItem) return;
+    if (!scrollContainer || !currentItem) return;
 
-    currentItem.scrollIntoView({
+    const targetLeft = currentItem.offsetLeft - scrollContainer.offsetLeft;
+    scrollContainer.scrollTo({
+      left: targetLeft,
       behavior: "smooth",
-      inline: "start",
-      block: "nearest",
     });
   }, [activeIndex]);
 
@@ -90,7 +92,10 @@ export default function TestimonialsCarousel({
             </div>
           </div>
 
-          <div className="flex gap-6 overflow-x-auto pb-4 pr-4 sm:px-2 snap-x snap-mandatory scroll-smooth">
+          <div
+            ref={containerRef}
+            className="flex gap-6 overflow-x-auto pb-4 pr-4 sm:px-2 snap-x snap-mandatory scroll-smooth"
+          >
             {testimonials.map((item, index) => (
               <div
                 key={item.author}

@@ -16,45 +16,21 @@ type LiveOrder = {
   createdAt: string;
 };
 
-const paymentMethodFields = {
-  Chime: [
-    { id: "tag", label: "Tag", placeholder: "@DrWilliamChime" },
-    { id: "name", label: "Name", placeholder: "Dr William Makis" },
-  ],
-  "Apple Pay": [
-    {
-      id: "link",
-      label: "Link",
-      placeholder: "applepay://pay?pa=drwmakis@applepay.com",
-    },
-    { id: "name", label: "Name", placeholder: "Dr William Makis" },
-  ],
-  Zelle: [
-    { id: "email", label: "Email", placeholder: "drwmakis@zelle.com" },
-    { id: "name", label: "Name", placeholder: "Dr William Makis" },
-  ],
-  PayPal: [
-    { id: "email", label: "Email", placeholder: "drwmakis-paypal@example.com" },
-    { id: "name", label: "Name", placeholder: "Dr William Makis" },
-  ],
-  Venmo: [
-    { id: "tag", label: "Tag", placeholder: "@DrWilliamVenmo" },
-    { id: "name", label: "Name", placeholder: "Dr William Makis" },
-    { id: "code", label: "Last digit code", placeholder: "1234" },
-  ],
-  "BTC address": [
-    { id: "btc", label: "BTC", placeholder: "bc1qdrwmakisbtc0000000000000000" },
-  ],
-};
+const PAYMENT_METHODS = [
+  "Chime",
+  "Apple Pay",
+  "Zelle",
+  "PayPal",
+  "Venmo",
+  "BTC address",
+] as const;
+type PaymentMethodName = (typeof PAYMENT_METHODS)[number];
 
-type PaymentMethod = keyof typeof paymentMethodFields;
+type PaymentField = { label: string; value: string };
+// Each method has a list of label/value pairs the admin configures
+type PaymentInfoMap = Record<PaymentMethodName, PaymentField[]>;
 
-type SavedPaymentInfo = Record<PaymentMethod, Record<string, string>>;
-
-type PackageOption = {
-  label: string;
-  price: string;
-};
+type PackageOption = { label: string; price: string };
 
 type LiveProduct = {
   _id: string;
@@ -169,8 +145,9 @@ export default function AdminPage() {
     if (isAuthenticated) {
       fetchOrders();
       fetchLiveProducts();
+      fetchPaymentInfo();
     }
-  }, [isAuthenticated, fetchOrders, fetchLiveProducts]);
+  }, [isAuthenticated]);
 
   const handleDeleteProduct = async (id: string) => {
     try {
@@ -246,11 +223,44 @@ export default function AdminPage() {
   const [newPackagePrice, setNewPackagePrice] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Chime");
-  const [paymentFields, setPaymentFields] = useState<Record<string, string>>({
-    tag: "@DrWilliamChime",
-    name: "Dr William Makis",
+  const [paymentMethod, setPaymentMethod] =
+    useState<PaymentMethodName>("Chime");
+  // paymentInfoMap holds the live fields per method loaded from the API
+  const [paymentInfoMap, setPaymentInfoMap] = useState<PaymentInfoMap>(() => {
+    const empty = {} as PaymentInfoMap;
+    PAYMENT_METHODS.forEach((m) => {
+      empty[m] = [];
+    });
+    return empty;
   });
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  // New field being added
+  const [newFieldLabel, setNewFieldLabel] = useState("");
+  const [newFieldValue, setNewFieldValue] = useState("");
+
+  // Load existing payment info from API on auth
+  const fetchPaymentInfo = useCallback(async () => {
+    try {
+      const res = await fetch("/api/payments");
+      const data = await res.json();
+      if (data.success) {
+        const map = { ...paymentInfoMap };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data.data.forEach((item: any) => {
+          if (PAYMENT_METHODS.includes(item.method)) {
+            const fields = Object.entries(
+              item.fields as Record<string, string>,
+            ).map(([label, value]) => ({ label, value }));
+            map[item.method as PaymentMethodName] = fields;
+          }
+        });
+        setPaymentInfoMap(map);
+      }
+    } catch {
+      /* silently fail */
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddPackageOption = () => {
     if (!newPackageLabel.trim() || !newPackagePrice.trim()) return;
@@ -275,18 +285,6 @@ export default function AdminPage() {
       packageOptions: current.packageOptions.filter((_, i) => i !== idx),
     }));
   };
-  const [savedPaymentInfo, setSavedPaymentInfo] = useState<SavedPaymentInfo>({
-    Chime: { tag: "@DrWilliamChime", name: "Dr William Makis" },
-    "Apple Pay": {
-      link: "applepay://pay?pa=drwmakis@applepay.com",
-      name: "Dr William Makis",
-    },
-    Zelle: { email: "drwmakis@zelle.com", name: "Dr William Makis" },
-    PayPal: { email: "drwmakis-paypal@example.com", name: "Dr William Makis" },
-    Venmo: { tag: "@DrWilliamVenmo", name: "Dr William Makis", code: "1234" },
-    "BTC address": { btc: "bc1qdrwmakisbtc0000000000000000" },
-  });
-  const [paymentMessage, setPaymentMessage] = useState("");
 
   const handleProductChange = (
     key: keyof Omit<LiveProduct, "_id" | "slug">,
@@ -360,48 +358,67 @@ export default function AdminPage() {
     }
   };
 
-  const handlePaymentFieldChange = (field: string, value: string) => {
-    setPaymentFields((current) => ({ ...current, [field]: value }));
+  const handlePaymentFieldChange = (
+    index: number,
+    key: "label" | "value",
+    val: string,
+  ) => {
+    setPaymentInfoMap((prev) => {
+      const fields = [...prev[paymentMethod]];
+      fields[index] = { ...fields[index], [key]: val };
+      return { ...prev, [paymentMethod]: fields };
+    });
   };
 
-  const handlePaymentMethodChange = (method: PaymentMethod) => {
-    setPaymentMethod(method);
-    setPaymentFields(savedPaymentInfo[method] || {});
-    setPaymentMessage("");
+  const handleAddPaymentField = () => {
+    if (!newFieldLabel.trim()) return;
+    setPaymentInfoMap((prev) => ({
+      ...prev,
+      [paymentMethod]: [
+        ...prev[paymentMethod],
+        { label: newFieldLabel.trim(), value: newFieldValue.trim() },
+      ],
+    }));
+    setNewFieldLabel("");
+    setNewFieldValue("");
+  };
+
+  const handleRemovePaymentField = (index: number) => {
+    setPaymentInfoMap((prev) => ({
+      ...prev,
+      [paymentMethod]: prev[paymentMethod].filter((_, i) => i !== index),
+    }));
   };
 
   const handlePaymentSubmit = async (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-
+    setPaymentSubmitting(true);
+    setPaymentMessage("");
     try {
+      const fields: Record<string, string> = {};
+      paymentInfoMap[paymentMethod].forEach((f) => {
+        if (f.label.trim()) fields[f.label.trim()] = f.value;
+      });
       const res = await fetch(
         `/api/payments/${encodeURIComponent(paymentMethod)}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ fields: paymentFields }),
+          body: JSON.stringify({ fields }),
         },
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to save.");
-
-      setSavedPaymentInfo((current) => ({
-        ...current,
-        [paymentMethod]: { ...paymentFields },
-      }));
-      setPaymentMessage(`${paymentMethod} payment info updated.`);
+      setPaymentMessage(`${paymentMethod} payment info saved.`);
     } catch (err: unknown) {
-      setPaymentMessage(
-        err instanceof Error ? err.message : "Error saving payment info.",
-      );
+      setPaymentMessage(err instanceof Error ? err.message : "Error saving.");
     } finally {
+      setPaymentSubmitting(false);
       window.setTimeout(() => setPaymentMessage(""), 4000);
     }
   };
-
-  const fieldDefinitions = paymentMethodFields[paymentMethod];
 
   return (
     <>
@@ -937,85 +954,124 @@ export default function AdminPage() {
                   <h2 className="mt-3 text-2xl font-semibold text-slate-900">
                     Update payout details
                   </h2>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Add the label and value for each field customers will see on
+                    the payment page.
+                  </p>
                 </div>
 
-                <form onSubmit={handlePaymentSubmit} className="space-y-6">
-                  <label className="block">
-                    <span className="text-sm font-medium text-slate-600">
-                      Payment method
-                    </span>
-                    <select
-                      value={paymentMethod}
-                      onChange={(event) =>
-                        handlePaymentMethodChange(
-                          event.target.value as PaymentMethod,
-                        )
-                      }
-                      className="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                {/* Method tabs */}
+                <div className="flex flex-wrap gap-2">
+                  {PAYMENT_METHODS.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod(m);
+                        setPaymentMessage("");
+                      }}
+                      className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                        paymentMethod === m
+                          ? "bg-slate-900 text-white"
+                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
                     >
-                      {Object.keys(paymentMethodFields).map((method) => (
-                        <option key={method} value={method}>
-                          {method}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  {fieldDefinitions.map((field) => (
-                    <label key={field.id} className="block">
-                      <span className="text-sm font-medium text-slate-600">
-                        {field.label}
-                      </span>
-                      <input
-                        value={paymentFields[field.id] || ""}
-                        onChange={(e) =>
-                          handlePaymentFieldChange(field.id, e.target.value)
-                        }
-                        placeholder={field.placeholder}
-                        className="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                      />
-                    </label>
+                      {m}
+                    </button>
                   ))}
+                </div>
+
+                <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                  {/* Existing fields */}
+                  {paymentInfoMap[paymentMethod].length === 0 ? (
+                    <p className="text-sm text-slate-400 italic">
+                      No fields yet. Add one below.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {paymentInfoMap[paymentMethod].map((field, idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <input
+                            value={field.label}
+                            onChange={(e) =>
+                              handlePaymentFieldChange(
+                                idx,
+                                "label",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Label (e.g. Tag)"
+                            className="w-1/3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-400"
+                          />
+                          <input
+                            value={field.value}
+                            onChange={(e) =>
+                              handlePaymentFieldChange(
+                                idx,
+                                "value",
+                                e.target.value,
+                              )
+                            }
+                            placeholder="Value (e.g. @DrWilliam)"
+                            className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-400"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePaymentField(idx)}
+                            className="rounded-full border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new field row */}
+                  <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3">
+                    <input
+                      value={newFieldLabel}
+                      onChange={(e) => setNewFieldLabel(e.target.value)}
+                      placeholder="New label (e.g. Email)"
+                      className="w-1/3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                    />
+                    <input
+                      value={newFieldValue}
+                      onChange={(e) => setNewFieldValue(e.target.value)}
+                      placeholder="Value"
+                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddPaymentField}
+                      className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                    >
+                      + Add
+                    </button>
+                  </div>
 
                   {paymentMessage && (
-                    <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    <div
+                      className={`rounded-2xl px-4 py-3 text-sm ${
+                        paymentMessage.includes("saved")
+                          ? "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : "border border-red-200 bg-red-50 text-red-700"
+                      }`}
+                    >
                       {paymentMessage}
                     </div>
                   )}
 
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    disabled={paymentSubmitting}
+                    className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
                   >
-                    Save payment info
+                    {paymentSubmitting
+                      ? "Saving…"
+                      : `Save ${paymentMethod} info`}
                   </button>
                 </form>
-
-                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-                  <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
-                    Current saved payment info
-                  </p>
-                  <div className="mt-4 space-y-4">
-                    {Object.entries(savedPaymentInfo).map(([method, info]) => (
-                      <div
-                        key={method}
-                        className="rounded-3xl border border-slate-200 bg-white p-4"
-                      >
-                        <p className="font-semibold text-slate-900">{method}</p>
-                        <div className="mt-3 grid gap-2 text-sm text-slate-600">
-                          {Object.entries(info).map(([key, value]) => (
-                            <div key={key} className="flex flex-wrap gap-2">
-                              <span className="font-semibold uppercase tracking-[0.2em] text-slate-500">
-                                {key}:
-                              </span>
-                              <span>{value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </section>
             </div>
 
