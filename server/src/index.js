@@ -33,7 +33,8 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 // ── Error handling middleware ─────────────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error("Error:", err.message);
+  console.error("Error:", err);
+  console.error(err.stack);
   if (err.code === "LIMIT_FILE_SIZE") {
     return res.status(400).json({
       success: false,

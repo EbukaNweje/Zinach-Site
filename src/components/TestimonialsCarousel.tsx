@@ -94,7 +94,9 @@ export default function TestimonialsCarousel({
             {testimonials.map((item, index) => (
               <div
                 key={item.author}
-                ref={(el) => (itemRefs.current[index] = el)}
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
                 className="min-w-[320px] flex-shrink-0 snap-start rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm"
               >
                 <p className="text-lg leading-8 text-slate-700">

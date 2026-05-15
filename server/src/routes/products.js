@@ -28,94 +28,68 @@ router.get("/:slug", async (req, res) => {
 });
 
 // POST /api/products — create product (with optional image upload)
-router.post("/", (req, res) => {
-  uploadProductImage.single("image")(req, res, (err) => {
-    if (err) {
-      console.error("Multer error:", err.message);
+router.post("/", uploadProductImage.single("image"), async (req, res) => {
+  try {
+    const { name, brand, price, description, packageOptions } = req.body;
+
+    if (!name || !brand || !price) {
       return res.status(400).json({
         success: false,
-        message: `Upload error: ${err.message}`,
+        message: "Missing required fields: name, brand, price",
       });
     }
 
-    // If no error, execute the handler
-    (async () => {
-      try {
-        const { name, brand, price, description, packageOptions } = req.body;
-
-        if (!name || !brand || !price) {
-          return res.status(400).json({
-            success: false,
-            message: "Missing required fields: name, brand, price",
-          });
-        }
-
-        const product = new Product({
-          name,
-          brand,
-          price,
-          description,
-          image: req.file ? req.file.path : "",
-          imagePublicId: req.file ? req.file.filename : "",
-          packageOptions: packageOptions ? JSON.parse(packageOptions) : [],
-        });
-        await product.save();
-        res.status(201).json({ success: true, data: product });
-      } catch (err) {
-        console.error("Product save error:", err.message);
-        res.status(400).json({ success: false, message: err.message });
-      }
-    })();
-  });
+    const product = new Product({
+      name,
+      brand,
+      price,
+      description,
+      image: req.file ? req.file.path : "",
+      imagePublicId: req.file ? req.file.filename : "",
+      packageOptions: packageOptions ? JSON.parse(packageOptions) : [],
+    });
+    await product.save();
+    res.status(201).json({ success: true, data: product });
+  } catch (err) {
+    console.error("Product save error:", err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
 });
 
 // PUT /api/products/:id — update product
-router.put("/:id", (req, res) => {
-  uploadProductImage.single("image")(req, res, (err) => {
-    if (err) {
-      console.error("Multer error:", err.message);
-      return res.status(400).json({
-        success: false,
-        message: `Upload error: ${err.message}`,
-      });
+router.put("/:id", uploadProductImage.single("image"), async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product)
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
+
+    const { name, brand, price, description, packageOptions } = req.body;
+
+    // If a new image was uploaded, delete the old one from Cloudinary
+    if (req.file && product.imagePublicId) {
+      await cloudinary.uploader.destroy(product.imagePublicId);
     }
 
-    // If no error, execute the handler
-    (async () => {
-      try {
-        const product = await Product.findById(req.params.id);
-        if (!product)
-          return res
-            .status(404)
-            .json({ success: false, message: "Product not found" });
+    product.name = name ?? product.name;
+    product.brand = brand ?? product.brand;
+    product.price = price ?? product.price;
+    product.description = description ?? product.description;
+    if (req.file) {
+      product.image = req.file.path;
+      product.imagePublicId = req.file.filename;
+    }
+    if (packageOptions) {
+      product.packageOptions = JSON.parse(packageOptions);
+    }
 
-        const { name, brand, price, description, packageOptions } = req.body;
-
-        // If a new image was uploaded, delete the old one from Cloudinary
-        if (req.file && product.imagePublicId) {
-          await cloudinary.uploader.destroy(product.imagePublicId);
-        }
-
-        product.name = name ?? product.name;
-        product.brand = brand ?? product.brand;
-        product.price = price ?? product.price;
-        product.description = description ?? product.description;
-        if (req.file) {
-          product.image = req.file.path;
-          product.imagePublicId = req.file.filename;
-        }
-        if (packageOptions) {
-          product.packageOptions = JSON.parse(packageOptions);
-        }
-
-        await product.save();
-        res.json({ success: true, data: product });
-      } catch (err) {
-        console.error("Product update error:", err.message);
-        res.status(400).json({ success: false, message: err.message });
-      }
-    })();
-  });
+    await product.save();
+    res.json({ success: true, data: product });
+  } catch (err) {
+    console.error("Product update error:", err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
 });
 
 // DELETE /api/products/:id

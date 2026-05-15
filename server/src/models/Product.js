@@ -20,14 +20,13 @@ const productSchema = new mongoose.Schema(
 );
 
 // Auto-generate slug from name before saving
-productSchema.pre("save", function (next) {
+productSchema.pre("save", function () {
   if (!this.slug) {
     this.slug = this.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
   }
-  next();
 });
 
 module.exports = mongoose.model("Product", productSchema);
