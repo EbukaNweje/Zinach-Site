@@ -54,7 +54,7 @@ export default function TestimonialsCarousel({
       <div className="mx-auto max-w-7xl">
         <div className="mb-12 text-center">
           <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
-            Testimonials
+            Reviews
           </p>
           <h2 className="mt-3 text-4xl font-semibold text-slate-900">
             Trusted by patients across the U.S.

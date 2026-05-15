@@ -72,9 +72,16 @@ export default function BillingPage() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!form.agree) return;
-    router.push(
-      `/payment?method=${encodeURIComponent(form.paymentMethod)}&amount=${total.toFixed(2)}`,
-    );
+
+    const params = new URLSearchParams({
+      method: form.paymentMethod,
+      amount: total.toFixed(2),
+      name: form.fullName,
+      email: form.email,
+      phone: form.contactNumber,
+    });
+
+    router.push(`/payment?${params.toString()}`);
   };
 
   return (

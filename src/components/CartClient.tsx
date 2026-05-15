@@ -121,39 +121,6 @@ export default function CartClient() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                {/* Quantity controls */}
-                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuantityChange(
-                        item.slug,
-                        item.quantity - 1,
-                        item.packageOption,
-                      )
-                    }
-                    className="h-7 w-7 rounded-full text-slate-600 hover:bg-slate-100 font-bold text-lg leading-none"
-                  >
-                    −
-                  </button>
-                  <span className="w-6 text-center text-sm font-semibold text-slate-900">
-                    {item.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleQuantityChange(
-                        item.slug,
-                        item.quantity + 1,
-                        item.packageOption,
-                      )
-                    }
-                    className="h-7 w-7 rounded-full text-slate-600 hover:bg-slate-100 font-bold text-lg leading-none"
-                  >
-                    +
-                  </button>
-                </div>
-
                 <p className="text-sm font-semibold text-slate-900 w-16 text-right">
                   $
                   {(

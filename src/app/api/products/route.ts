@@ -1,22 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_URL = "https://drwilliammakis-md.vercel.app/";
+import connectDB from "@/lib/db/mongoose";
+import ProductModel, { toSlug } from "@/lib/models/Product";
+import { uploadImage } from "@/lib/cloudinary";
 
 export async function GET() {
-  const res = await fetch(`${API_URL}/api/products`, { cache: "no-store" });
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+  try {
+    await connectDB();
+    const products = await ProductModel.find().sort({ createdAt: -1 }).lean();
+    return NextResponse.json({ success: true, data: products });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ success: false, message: msg }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
-  // Forward multipart form data (includes product image) to the backend
-  const formData = await req.formData();
+  try {
+    await connectDB();
+    const formData = await req.formData();
 
-  const res = await fetch(`${API_URL}/api/products`, {
-    method: "POST",
-    body: formData as unknown as BodyInit,
-  });
+    const name = formData.get("name") as string;
+    const brand = formData.get("brand") as string;
+    const price = formData.get("price") as string;
+    const description = formData.get("description") as string;
+    const packageOptions = JSON.parse(
+      (formData.get("packageOptions") as string) || "[]",
+    );
+    const imageFile = formData.get("image") as File | null;
 
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+    let imageUrl = "";
+    let imagePublicId = "";
+
+    if (imageFile && imageFile.size > 0) {
+      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      const uploaded = await uploadImage(buffer, "zinach/products");
+      imageUrl = uploaded.url;
+      imagePublicId = uploaded.publicId;
+    }
+
+    // Generate unique slug
+    const baseSlug = toSlug(name);
+    const existing = await ProductModel.findOne({ slug: baseSlug });
+    const slug = existing ? `${baseSlug}-${Date.now()}` : baseSlug;
+
+    const product = new ProductModel({
+      name,
+      brand,
+      price,
+      description,
+      image: imageUrl,
+      imagePublicId,
+      packageOptions,
+      slug,
+    });
+
+    await product.save();
+    return NextResponse.json({ success: true, data: product }, { status: 201 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ success: false, message: msg }, { status: 400 });
+  }
 }

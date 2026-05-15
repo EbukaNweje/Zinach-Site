@@ -194,7 +194,12 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append("name", editingProduct.name);
       formData.append("brand", editingProduct.brand);
-      formData.append("price", editingProduct.price);
+      formData.append(
+        "price",
+        editingProduct.price.startsWith("$")
+          ? editingProduct.price
+          : `$${editingProduct.price}`,
+      );
       formData.append("description", editingProduct.description);
       formData.append(
         "packageOptions",
@@ -249,11 +254,15 @@ export default function AdminPage() {
 
   const handleAddPackageOption = () => {
     if (!newPackageLabel.trim() || !newPackagePrice.trim()) return;
+    const price = newPackagePrice.trim();
     setProduct((current) => ({
       ...current,
       packageOptions: [
         ...current.packageOptions,
-        { label: newPackageLabel.trim(), price: newPackagePrice.trim() },
+        {
+          label: newPackageLabel.trim(),
+          price: price.startsWith("$") ? price : `$${price}`,
+        },
       ],
     }));
     setNewPackageLabel("");
@@ -313,7 +322,10 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append("name", product.name);
       formData.append("brand", product.brand);
-      formData.append("price", product.price);
+      formData.append(
+        "price",
+        product.price.startsWith("$") ? product.price : `$${product.price}`,
+      );
       formData.append("description", product.description);
       formData.append("packageOptions", JSON.stringify(product.packageOptions));
       if (imageFile) formData.append("image", imageFile);
@@ -544,14 +556,22 @@ export default function AdminPage() {
                       <span className="text-sm font-medium text-slate-600">
                         Price
                       </span>
-                      <input
-                        value={product.price}
-                        onChange={(e) =>
-                          handleProductChange("price", e.target.value)
-                        }
-                        className="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                        placeholder="$80.00"
-                      />
+                      <div className="relative mt-2">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-500">
+                          $
+                        </span>
+                        <input
+                          value={product.price.replace(/^\$/, "")}
+                          onChange={(e) =>
+                            handleProductChange(
+                              "price",
+                              e.target.value.replace(/^\$/, ""),
+                            )
+                          }
+                          className="w-full rounded-3xl border border-slate-200 bg-slate-50 pl-8 pr-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                          placeholder="80.00"
+                        />
+                      </div>
                     </label>
                     <label className="block">
                       <span className="text-sm font-medium text-slate-600">
@@ -578,12 +598,21 @@ export default function AdminPage() {
                         placeholder="e.g. 20 capsules"
                         className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
                       />
-                      <input
-                        value={newPackagePrice}
-                        onChange={(e) => setNewPackagePrice(e.target.value)}
-                        placeholder="$80.00"
-                        className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                      />
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-500">
+                          $
+                        </span>
+                        <input
+                          value={newPackagePrice.replace(/^\$/, "")}
+                          onChange={(e) =>
+                            setNewPackagePrice(
+                              e.target.value.replace(/^\$/, ""),
+                            )
+                          }
+                          placeholder="80.00"
+                          className="w-full rounded-3xl border border-slate-200 bg-white pl-8 pr-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
+                        />
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -733,16 +762,27 @@ export default function AdminPage() {
                                 <span className="text-xs font-medium text-slate-500">
                                   Price
                                 </span>
-                                <input
-                                  value={editingProduct.price}
-                                  onChange={(e) =>
-                                    setEditingProduct({
-                                      ...editingProduct,
-                                      price: e.target.value,
-                                    })
-                                  }
-                                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
-                                />
+                                <div className="relative mt-1">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-500">
+                                    $
+                                  </span>
+                                  <input
+                                    value={editingProduct.price.replace(
+                                      /^\$/,
+                                      "",
+                                    )}
+                                    onChange={(e) =>
+                                      setEditingProduct({
+                                        ...editingProduct,
+                                        price: e.target.value.replace(
+                                          /^\$/,
+                                          "",
+                                        ),
+                                      })
+                                    }
+                                    className="w-full rounded-2xl border border-slate-200 bg-white pl-7 pr-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                                  />
+                                </div>
                               </label>
                               <label className="block">
                                 <span className="text-xs font-medium text-slate-500">

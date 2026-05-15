@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_URL = process.env.BACKEND_URL ?? "http://localhost:4000";
+import connectDB from "@/lib/db/mongoose";
+import PaymentInfoModel from "@/lib/models/PaymentInfo";
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ method: string }> },
 ) {
-  const { method } = await params;
-  const body = await req.json();
+  try {
+    await connectDB();
+    const { method } = await params;
+    const { fields } = await req.json();
 
-  const res = await fetch(
-    `${API_URL}/api/payments/${encodeURIComponent(method)}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    },
-  );
+    const info = await PaymentInfoModel.findOneAndUpdate(
+      { method },
+      { method, fields },
+      { new: true, upsert: true, runValidators: true },
+    );
 
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+    return NextResponse.json({ success: true, data: info });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ success: false, message: msg }, { status: 400 });
+  }
 }

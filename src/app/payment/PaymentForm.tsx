@@ -13,10 +13,7 @@ export type PaymentMethod =
   | "Credit Card"
   | "BTC";
 
-type PaymentField = {
-  label: string;
-  value: string;
-};
+type PaymentField = { label: string; value: string };
 
 type PaymentMethodDetails = {
   title: string;
@@ -111,7 +108,9 @@ const methodDetails: Record<PaymentMethod, PaymentMethodDetails> = {
   BTC: {
     title: "BTC Payment Information",
     note: "Copy the Bitcoin address below to complete your payment.",
-    fields: [{ label: "BTC", value: "bc1qdrwmakisbtc0000000000000000" }],
+    fields: [
+      { label: "BTC Address", value: "bc1qdrwmakisbtc0000000000000000" },
+    ],
     instructions: [
       "Open your Bitcoin wallet.",
       "Send BTC to the address shown below.",
@@ -121,57 +120,56 @@ const methodDetails: Record<PaymentMethod, PaymentMethodDetails> = {
   },
 };
 
-const paymentMethods: PaymentMethod[] = [
-  "Chime",
-  "Apple Pay",
-  "Zelle",
-  "PayPal",
-  "Venmo",
-  "BTC",
-  "Credit Card",
-];
-
 export default function PaymentForm({
   selectedMethod,
   amount,
+  customerName: initialName,
+  customerEmail: initialEmail,
+  customerPhone: initialPhone,
 }: {
   selectedMethod: PaymentMethod;
   amount: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 }) {
   const { cartItems, clearCart } = useCart();
-  const [method, setMethod] = useState<PaymentMethod>(selectedMethod);
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+
+  // Method is fixed to what was chosen on billing — no switching here
+  const method = selectedMethod;
+  const details = methodDetails[method];
+  const showCardFields = method === "Credit Card";
+  const showProofUpload = method !== "Credit Card";
+
+  // Pre-filled from billing page
+  const [customerName, setCustomerName] = useState(initialName ?? "");
+  const [customerEmail, setCustomerEmail] = useState(initialEmail ?? "");
+  const [customerPhone, setCustomerPhone] = useState(initialPhone ?? "");
+
+  // Card fields (only for Credit Card)
   const [cardName, setCardName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpMonth, setCardExpMonth] = useState("");
   const [cardExpYear, setCardExpYear] = useState("");
   const [cardCvc, setCardCvc] = useState("");
+
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [copyMessage, setCopyMessage] = useState<string>("");
+  const [copyStates, setCopyStates] = useState<Record<string, boolean>>({});
 
-  const details = methodDetails[method];
-  const showCardFields = method === "Credit Card";
-  const showProofUpload = method !== "Credit Card";
-
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0] ?? null;
-    setPaymentProof(file);
-  };
-
-  const handleCopy = async (text: string) => {
+  const handleCopy = async (label: string, text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopyMessage("Copied!");
-      window.setTimeout(() => setCopyMessage(""), 2000);
+      setCopyStates((prev) => ({ ...prev, [label]: true }));
+      setTimeout(
+        () => setCopyStates((prev) => ({ ...prev, [label]: false })),
+        2000,
+      );
     } catch {
-      setCopyMessage("Copy failed");
-      window.setTimeout(() => setCopyMessage(""), 2000);
+      // silently fail
     }
   };
 
@@ -188,7 +186,6 @@ export default function PaymentForm({
 
     try {
       const formData = new FormData();
-
       formData.append(
         "customer",
         JSON.stringify({
@@ -198,7 +195,6 @@ export default function PaymentForm({
         }),
       );
 
-      // Build items from cart, or fall back to a generic entry
       const items =
         cartItems && cartItems.length > 0
           ? cartItems.map((item) => ({
@@ -213,16 +209,12 @@ export default function PaymentForm({
       formData.append("items", JSON.stringify(items));
       formData.append("total", amount);
       formData.append("paymentMethod", method);
-
-      if (paymentProof) {
-        formData.append("proofImage", paymentProof);
-      }
+      if (paymentProof) formData.append("proofImage", paymentProof);
 
       const res = await fetch("/api/orders", {
         method: "POST",
         body: formData,
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to place order.");
 
@@ -244,295 +236,236 @@ export default function PaymentForm({
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <div className="mx-auto max-w-6xl px-6 py-20">
-        <div className="rounded-[2rem] bg-slate-900/95 p-8 shadow-2xl shadow-slate-950/30 backdrop-blur">
-          <div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
+        <div className="rounded-3xl bg-slate-900 p-8 shadow-2xl">
+          <div className="grid gap-8 xl:grid-cols-[1fr_1.2fr]">
+            {/* ── Left column ── */}
             <div className="space-y-6">
+              {/* Selected payment method — display only */}
               <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-4">
                   Payment method
                 </p>
-                <div className="mt-5 flex flex-wrap gap-3">
-                  {paymentMethods.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => setMethod(option)}
-                      className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                        option === method
-                          ? "bg-white text-slate-950 shadow-lg"
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                      }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
+                <div className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-950 shadow">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  {method}
                 </div>
+                <p className="mt-3 text-xs text-slate-500">
+                  Selected on the billing page.{" "}
+                  <Link
+                    href="/billing"
+                    className="text-slate-400 underline hover:text-white"
+                  >
+                    Change
+                  </Link>
+                </p>
               </div>
 
+              {/* Order total */}
               <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
                   Order total
                 </p>
                 <p className="mt-4 text-5xl font-bold text-white">${amount}</p>
-                <p className="mt-3 text-sm text-slate-400">
-                  Selected method: {method}
-                </p>
+                <p className="mt-2 text-sm text-slate-400">via {method}</p>
               </div>
 
+              {/* Summary */}
               <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
                   Summary
                 </p>
-                <h2 className="mt-4 text-2xl font-semibold text-white">
+                <h2 className="mt-4 text-xl font-semibold text-white">
                   {details.title}
                 </h2>
-                <p className="mt-3 text-sm text-slate-400">{details.note}</p>
+                <p className="mt-2 text-sm text-slate-400">{details.note}</p>
               </div>
-            </div>
 
-            <div className="space-y-6">
+              {/* Instructions */}
               <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-4">
                   Payment instructions
                 </p>
-                <ol className="mt-5 space-y-3 text-sm leading-7 text-slate-300">
-                  {details.instructions.map((instruction) => (
-                    <li key={instruction}>{instruction}</li>
+                <ol className="space-y-3 text-sm leading-7 text-slate-300 list-decimal list-inside">
+                  {details.instructions.map((step) => (
+                    <li key={step}>{step}</li>
                   ))}
                 </ol>
               </div>
+            </div>
 
-              <form
-                onSubmit={handleSubmit}
-                className="space-y-6 rounded-[2rem] border border-slate-800 bg-slate-950 p-6"
-              >
-                {/* Customer details */}
-                <div className="space-y-4">
+            {/* ── Right column ── */}
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Your details — pre-filled from billing */}
+              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-4">
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                  Your details
+                </p>
+                <input
+                  type="text"
+                  required
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  placeholder="Full name *"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
+                />
+                <input
+                  type="email"
+                  required
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  placeholder="Email address * (for order confirmation)"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
+                />
+                <input
+                  type="tel"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  placeholder="Phone number (optional)"
+                  className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
+                />
+              </div>
+
+              {/* Payment method fields */}
+              {showCardFields ? (
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-5">
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                    Your details
+                    Card details
                   </p>
                   <input
                     type="text"
-                    required
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Full name *"
-                    className="w-full rounded-3xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
+                    value={cardNumber}
+                    onChange={(e) => setCardNumber(e.target.value)}
+                    placeholder="Card number *"
+                    className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
                   />
+                  <div className="grid grid-cols-3 gap-3">
+                    <input
+                      type="text"
+                      value={cardExpMonth}
+                      onChange={(e) => setCardExpMonth(e.target.value)}
+                      placeholder="MM"
+                      className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
+                    />
+                    <input
+                      type="text"
+                      value={cardExpYear}
+                      onChange={(e) => setCardExpYear(e.target.value)}
+                      placeholder="YYYY"
+                      className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
+                    />
+                    <input
+                      type="text"
+                      value={cardCvc}
+                      onChange={(e) => setCardCvc(e.target.value)}
+                      placeholder="CVV"
+                      className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
+                    />
+                  </div>
                   <input
-                    type="email"
-                    required
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    placeholder="Email address * (for order confirmation)"
-                    className="w-full rounded-3xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
-                  />
-                  <input
-                    type="tel"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Phone number (optional)"
-                    className="w-full rounded-3xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-white outline-none transition focus:border-slate-500 placeholder:text-slate-500"
+                    type="text"
+                    value={cardName}
+                    onChange={(e) => setCardName(e.target.value)}
+                    placeholder="Cardholder name"
+                    className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
                   />
                 </div>
-                {showCardFields ? (
-                  <div className="space-y-6">
-                    <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-slate-950/20">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                            Secure payment
-                          </p>
-                          <h2 className="mt-3 text-2xl font-semibold text-white">
-                            Credit Card
-                          </h2>
-                        </div>
-                        <div className="rounded-full bg-slate-800 px-4 py-2 text-xs uppercase tracking-[0.24em] text-slate-400">
-                          Secure checkout
-                        </div>
+              ) : (
+                /* Payment info fields with copy buttons */
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-2">
+                    {method} details — copy &amp; send payment
+                  </p>
+                  {details.fields.map((field) => (
+                    <div
+                      key={field.label}
+                      className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-4"
+                    >
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                          {field.label}
+                        </p>
+                        <p className="mt-1 text-base font-semibold text-white break-all">
+                          {field.value}
+                        </p>
                       </div>
-
-                      <div className="mt-8 space-y-6">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-300">
-                            Card Number *
-                          </label>
-                          <input
-                            type="text"
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            placeholder="1234 5678 9012 3456"
-                            className="mt-3 w-full rounded-[1.5rem] border border-slate-800 bg-slate-950 px-4 py-4 text-lg text-white outline-none transition focus:border-slate-500"
-                          />
-                        </div>
-
-                        <div className="grid gap-4 sm:grid-cols-3">
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300">
-                              Exp Month *
-                            </label>
-                            <input
-                              type="text"
-                              value={cardExpMonth}
-                              onChange={(e) => setCardExpMonth(e.target.value)}
-                              placeholder="MM"
-                              className="mt-3 w-full rounded-[1.5rem] border border-slate-800 bg-slate-950 px-4 py-4 text-lg text-white outline-none transition focus:border-slate-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300">
-                              Exp Year *
-                            </label>
-                            <input
-                              type="text"
-                              value={cardExpYear}
-                              onChange={(e) => setCardExpYear(e.target.value)}
-                              placeholder="YYYY"
-                              className="mt-3 w-full rounded-[1.5rem] border border-slate-800 bg-slate-950 px-4 py-4 text-lg text-white outline-none transition focus:border-slate-500"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300">
-                              CVV *
-                            </label>
-                            <input
-                              type="text"
-                              value={cardCvc}
-                              onChange={(e) => setCardCvc(e.target.value)}
-                              placeholder="123"
-                              className="mt-3 w-full rounded-[1.5rem] border border-slate-800 bg-slate-950 px-4 py-4 text-lg text-white outline-none transition focus:border-slate-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(field.label, field.value)}
+                        className="flex-shrink-0 rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700"
+                      >
+                        {copyStates[field.label] ? "Copied ✓" : "Copy"}
+                      </button>
                     </div>
-
-                    <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
-                      <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
-                        Cardholder name
-                      </p>
-                      <input
-                        type="text"
-                        value={cardName}
-                        onChange={(e) => setCardName(e.target.value)}
-                        placeholder="First Last"
-                        className="mt-3 w-full rounded-[1.5rem] border border-slate-800 bg-slate-900 px-4 py-4 text-lg text-white outline-none transition focus:border-slate-500"
-                      />
-                      <p className="mt-3 text-sm text-slate-400">
-                        Enter your credit card information exactly as it appears
-                        on the card.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
-                      <div className="grid gap-4">
-                        {details.fields.map((field) => (
-                          <div
-                            key={field.label}
-                            className="rounded-3xl border border-slate-800 bg-slate-900 p-4"
-                          >
-                            <div className="flex items-center justify-between gap-4">
-                              <div>
-                                <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
-                                  {field.label}
-                                </p>
-                                <p className="mt-2 text-lg text-slate-100 break-words">
-                                  {field.value}
-                                </p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => handleCopy(field.value)}
-                                className="rounded-full border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white transition hover:border-slate-500 hover:bg-slate-800"
-                              >
-                                {copyMessage || "Copy"}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
-                      <p className="text-sm uppercase tracking-[0.24em] text-slate-500">
-                        Ready to pay
-                      </p>
-                      <p className="mt-3 text-sm text-slate-400">
-                        Copy the values above and complete your payment in the
-                        selected app.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {showProofUpload && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300">
-                      Upload Payment Proof
-                    </label>
-                    <label className="mt-3 flex min-h-[180px] w-full cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-slate-700 bg-slate-900 px-4 py-6 text-center text-sm text-slate-400 transition hover:border-slate-500 hover:text-slate-200">
-                      <span className="mb-4 inline-block text-4xl">📎</span>
-                      <span className="font-medium text-slate-200">
-                        Click to upload payment proof
-                      </span>
-                      <span className="mt-2 text-xs text-slate-500">
-                        Supported formats: JPG, PNG, PDF (Max 5MB)
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={handleFileChange}
-                        className="sr-only"
-                      />
-                    </label>
-                    {paymentProof && (
-                      <p className="mt-3 text-sm text-slate-300">
-                        Selected file: {paymentProof.name}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {statusMessage && (
-                  <div
-                    className={`rounded-3xl border p-4 text-sm ${
-                      submitStatus === "success"
-                        ? "border-emerald-700 bg-emerald-950/50 text-emerald-300"
-                        : submitStatus === "error"
-                          ? "border-red-700 bg-red-950/50 text-red-300"
-                          : "border-slate-700 bg-slate-900 text-slate-300"
-                    }`}
-                  >
-                    {statusMessage}
-                  </div>
-                )}
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Link
-                    href="/billing"
-                    className="inline-flex items-center justify-center rounded-full border border-slate-700 bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:border-slate-500 hover:bg-slate-800"
-                  >
-                    Cancel
-                  </Link>
-                  <button
-                    type="submit"
-                    disabled={
-                      submitStatus === "submitting" ||
-                      submitStatus === "success"
-                    }
-                    className="inline-flex items-center justify-center rounded-full bg-slate-100 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-white disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {submitStatus === "submitting"
-                      ? "Placing order…"
-                      : submitStatus === "success"
-                        ? "Order placed ✓"
-                        : `Pay $${amount}`}
-                  </button>
+                  ))}
                 </div>
-              </form>
-            </div>
+              )}
+
+              {/* Proof upload */}
+              {showProofUpload && (
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-3">
+                    Upload payment proof
+                  </p>
+                  <label className="flex min-h-[140px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-slate-700 bg-slate-900 px-4 py-5 text-center transition hover:border-slate-500">
+                    <span className="text-3xl mb-2">📎</span>
+                    <span className="text-sm font-medium text-slate-200">
+                      {paymentProof
+                        ? paymentProof.name
+                        : "Click to upload screenshot or PDF"}
+                    </span>
+                    <span className="mt-1 text-xs text-slate-500">
+                      JPG, PNG, PDF — max 10MB
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) =>
+                        setPaymentProof(e.target.files?.[0] ?? null)
+                      }
+                      className="sr-only"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Status message */}
+              {statusMessage && (
+                <div
+                  className={`rounded-2xl border p-4 text-sm ${
+                    submitStatus === "success"
+                      ? "border-emerald-700 bg-emerald-950/50 text-emerald-300"
+                      : submitStatus === "error"
+                        ? "border-red-700 bg-red-950/50 text-red-300"
+                        : "border-slate-700 bg-slate-900 text-slate-300"
+                  }`}
+                >
+                  {statusMessage}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Link
+                  href="/billing"
+                  className="inline-flex items-center justify-center rounded-full border border-slate-700 bg-slate-900 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  ← Back to billing
+                </Link>
+                <button
+                  type="submit"
+                  disabled={
+                    submitStatus === "submitting" || submitStatus === "success"
+                  }
+                  className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitStatus === "submitting"
+                    ? "Placing order…"
+                    : submitStatus === "success"
+                      ? "Order placed ✓"
+                      : `Confirm & Pay $${amount}`}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

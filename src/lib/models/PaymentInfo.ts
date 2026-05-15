@@ -6,6 +6,7 @@ const paymentInfoSchema = new Schema(
       type: String,
       required: true,
       unique: true,
+      enum: ["Chime", "Apple Pay", "Zelle", "PayPal", "Venmo", "BTC address"],
     },
     fields: {
       type: Map,
@@ -16,5 +17,4 @@ const paymentInfoSchema = new Schema(
   { timestamps: true },
 );
 
-export const PaymentInfo =
-  models.PaymentInfo || model("PaymentInfo", paymentInfoSchema);
+export default models.PaymentInfo || model("PaymentInfo", paymentInfoSchema);

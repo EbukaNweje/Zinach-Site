@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import { Schema, model, models } from "mongoose";
 
 const packageOptionSchema = new Schema({
   label: { type: String, required: true },
@@ -19,14 +19,11 @@ const productSchema = new Schema(
   { timestamps: true },
 );
 
-productSchema.pre("save", function (next) {
-  if (!this.slug) {
-    this.slug = (this.name as string)
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-  }
-  next();
-});
+export function toSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
 
-export const Product = models.Product || model("Product", productSchema);
+export default models.Product || model("Product", productSchema);

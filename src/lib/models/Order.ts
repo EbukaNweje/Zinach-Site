@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import { Schema, model, models } from "mongoose";
 
 const orderItemSchema = new Schema({
   productId: { type: String },
@@ -33,12 +33,4 @@ const orderSchema = new Schema(
   { timestamps: true },
 );
 
-orderSchema.pre("save", async function (next) {
-  if (!this.orderNumber) {
-    const count = await mongoose.model("Order").countDocuments();
-    this.orderNumber = `ORD-${String(count + 1001).padStart(4, "0")}`;
-  }
-  next();
-});
-
-export const Order = models.Order || model("Order", orderSchema);
+export default models.Order || model("Order", orderSchema);

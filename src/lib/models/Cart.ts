@@ -19,4 +19,4 @@ const cartSchema = new Schema(
   { timestamps: true },
 );
 
-export const Cart = models.Cart || model("Cart", cartSchema);
+export default models.Cart || model("Cart", cartSchema);

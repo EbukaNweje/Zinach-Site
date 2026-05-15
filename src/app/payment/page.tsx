@@ -1,17 +1,17 @@
 import PaymentForm, { PaymentMethod } from "./PaymentForm";
 
 interface PaymentPageProps {
-  searchParams: {
+  searchParams: Promise<{
     method?: string;
     amount?: string;
-  };
+    name?: string;
+    email?: string;
+    phone?: string;
+  }>;
 }
 
-const normalizeMethod = (value: string | null): PaymentMethod => {
-  if (!value) {
-    return "Chime";
-  }
-
+const normalizeMethod = (value: string | undefined): PaymentMethod => {
+  if (!value) return "Chime";
   const normalized = value.trim().toLowerCase();
   const methodMap: Record<string, PaymentMethod> = {
     chime: "Chime",
@@ -25,7 +25,6 @@ const normalizeMethod = (value: string | null): PaymentMethod => {
     btc: "BTC",
     btcaddress: "BTC",
   };
-
   return (
     methodMap[normalized] ??
     (Object.values(methodMap).includes(value as PaymentMethod)
@@ -34,8 +33,21 @@ const normalizeMethod = (value: string | null): PaymentMethod => {
   );
 };
 
-export default function PaymentPage({ searchParams }: PaymentPageProps) {
-  const selectedMethod = normalizeMethod(searchParams.method ?? "Chime");
-  const amount = searchParams.amount ?? "XX.XX";
-  return <PaymentForm selectedMethod={selectedMethod} amount={amount} />;
+export default async function PaymentPage({ searchParams }: PaymentPageProps) {
+  const params = await searchParams;
+  const selectedMethod = normalizeMethod(params.method);
+  const amount = params.amount ?? "0.00";
+  const customerName = params.name ?? "";
+  const customerEmail = params.email ?? "";
+  const customerPhone = params.phone ?? "";
+
+  return (
+    <PaymentForm
+      selectedMethod={selectedMethod}
+      amount={amount}
+      customerName={customerName}
+      customerEmail={customerEmail}
+      customerPhone={customerPhone}
+    />
+  );
 }

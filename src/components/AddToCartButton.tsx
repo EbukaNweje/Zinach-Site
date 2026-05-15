@@ -8,9 +8,11 @@ import { useCart } from "./CartContext";
 export default function AddToCartButton({
   product,
   packageOption,
+  fullWidth = true,
 }: {
   product: Product;
   packageOption?: string;
+  fullWidth?: boolean;
 }) {
   const { cartItems, setCartItems } = useCart();
   const [adding, setAdding] = useState(false);
@@ -25,15 +27,17 @@ export default function AddToCartButton({
     if (isAdded || adding) return;
     setAdding(true);
     try {
+      const optPrice = packageOption
+        ? product.packageOptions?.find((o) => o.label === packageOption)?.price
+        : undefined;
+      const price = optPrice ?? product.price;
+
       const updated = await addToCart({
         productId: product._id,
         slug: product.slug,
         name: product.name,
         brand: product.brand,
-        price: packageOption
-          ? (product.packageOptions.find((o) => o.label === packageOption)
-              ?.price ?? product.price)
-          : product.price,
+        price: price.startsWith("$") ? price : `$${price}`,
         image: product.image,
         packageOption: packageOption ?? "",
         quantity: 1,
@@ -49,15 +53,15 @@ export default function AddToCartButton({
       type="button"
       onClick={handleAdd}
       disabled={adding}
-      className={`inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold transition ${
+      className={`${fullWidth ? "w-full" : ""} inline-flex items-center justify-center rounded-2xl px-6 py-3.5 text-sm font-bold tracking-wide transition ${
         isAdded
           ? "bg-emerald-600 text-white cursor-default"
           : adding
             ? "bg-slate-400 text-white cursor-not-allowed"
-            : "bg-slate-900 text-white hover:bg-slate-800"
+            : "bg-[#1a2744] text-white hover:bg-[#243460] active:scale-[0.98]"
       }`}
     >
-      {isAdded ? "Added ✓" : adding ? "Adding…" : "Add to Cart"}
+      {isAdded ? "Added to Cart ✓" : adding ? "Adding…" : "Add to Cart"}
     </button>
   );
 }

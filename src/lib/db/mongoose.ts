@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
 if (!MONGODB_URI) {
-  throw new Error("Please define MONGODB_URI in your .env.local");
+  throw new Error("Please define MONGODB_URI in your environment variables");
 }
 
 // Cache the connection across hot-reloads in development
@@ -12,12 +12,12 @@ declare global {
   var _mongooseConn: Promise<typeof mongoose> | undefined;
 }
 
-let cached = global._mongooseConn;
-
-if (!cached) {
-  cached = global._mongooseConn = mongoose.connect(MONGODB_URI);
+async function connectDB(): Promise<typeof mongoose> {
+  if (global._mongooseConn) {
+    return global._mongooseConn;
+  }
+  global._mongooseConn = mongoose.connect(MONGODB_URI);
+  return global._mongooseConn;
 }
 
-export async function connectDB() {
-  await cached;
-}
+export default connectDB;

@@ -1,20 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_URL = process.env.BACKEND_URL ?? "http://localhost:4000";
+import connectDB from "@/lib/db/mongoose";
+import OrderModel from "@/lib/models/Order";
+import { sendPaymentConfirmation } from "@/lib/email";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
-  const body = await req.json();
+  try {
+    await connectDB();
+    const { id } = await params;
+    const { paymentStatus } = await req.json();
 
-  const res = await fetch(`${API_URL}/api/orders/${id}/status`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+    const validStatuses = ["pending", "processing", "paid", "failed"];
+    if (!validStatuses.includes(paymentStatus)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid status" },
+        { status: 400 },
+      );
+    }
 
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+    const order = await OrderModel.findByIdAndUpdate(
+      id,
+      { paymentStatus },
+      { new: true },
+    );
+
+    if (!order) {
+      return NextResponse.json(
+        { success: false, message: "Order not found" },
+        { status: 404 },
+      );
+    }
+
+    if (paymentStatus === "paid") {
+      sendPaymentConfirmation(order).catch((e: Error) =>
+        console.error("Payment confirmation email failed:", e.message),
+      );
+    }
+
+    return NextResponse.json({ success: true, data: order });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Server error";
+    return NextResponse.json({ success: false, message: msg }, { status: 500 });
+  }
 }

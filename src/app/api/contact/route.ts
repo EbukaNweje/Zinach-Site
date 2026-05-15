@@ -1,16 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const API_URL = process.env.BACKEND_URL ?? "http://localhost:4000";
+import { sendContactEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
+  try {
+    const { name, email, subject, message } = await req.json();
 
-  const res = await fetch(`${API_URL}/api/contact`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+    if (!name || !email || !subject || !message) {
+      return NextResponse.json(
+        { success: false, message: "All fields are required." },
+        { status: 400 },
+      );
+    }
 
-  const data = await res.json();
-  return NextResponse.json(data, { status: res.status });
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid email address." },
+        { status: 400 },
+      );
+    }
+
+    await sendContactEmail({ name, email, subject, message });
+    return NextResponse.json({
+      success: true,
+      message: "Message sent successfully.",
+    });
+  } catch (err: unknown) {
+    console.error("Contact email error:", err);
+    return NextResponse.json(
+      { success: false, message: "Failed to send message. Please try again." },
+      { status: 500 },
+    );
+  }
 }

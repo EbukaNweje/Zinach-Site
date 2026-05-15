@@ -1,7 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import { fetchProducts, Product } from "../lib/products";
-import AddToCartButton from "../components/AddToCartButton";
+import ProductCard from "../components/ProductCard";
 import TestimonialsCarousel from "../components/TestimonialsCarousel";
 
 export const dynamic = "force-dynamic";
@@ -32,31 +31,27 @@ const faqs = [
 const testimonials = [
   {
     quote:
-      "Fast shipping, clear payment options, and supportive customer care — the whole experience felt safe and reliable.",
+      "Joe Tippens recommended this site and I bought the kit and my cousin is now cancer free.",
     author: "Samantha R.",
     role: "Verified patient",
   },
   {
-    quote:
-      "Great service from start to finish. The pharmacy answered my questions and delivered quickly.",
+    quote: "I took the full kit and it cured my breast cancer.",
     author: "Mark T.",
     role: "Repeat customer",
   },
   {
-    quote:
-      "I appreciated the clear communication and fast delivery. The order arrived exactly as promised.",
+    quote: "I purchased the full kit and it cured my cancer.",
     author: "Aisha K.",
     role: "First-time buyer",
   },
   {
-    quote:
-      "The physician review and secure checkout gave me confidence to place my order online.",
+    quote: "This is a legit site where I got my ivermectin.",
     author: "James L.",
     role: "Returning customer",
   },
   {
-    quote:
-      "Helpful support and a smooth experience. I felt well taken care of from payment to delivery.",
+    quote: "This is the second I’m purchasing my cancer kit on here.",
     author: "Maria P.",
     role: "Satisfied patient",
   },
@@ -165,47 +160,7 @@ export default async function Home() {
           ) : (
             <div className="grid gap-6 md:grid-cols-3">
               {products.slice(0, 3).map((product: Product) => (
-                <article
-                  key={product._id}
-                  className="group rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="overflow-hidden rounded-[1.75rem] bg-slate-50">
-                    {product.image ? (
-                      <div className="relative aspect-[4/3] w-full">
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                        />
-                      </div>
-                    ) : (
-                      <div className="aspect-[4/3] w-full bg-gradient-to-br from-slate-100 via-slate-200 to-slate-100" />
-                    )}
-                  </div>
-                  <span className="mt-6 inline-flex rounded-full bg-slate-100 px-4 py-2 text-xs uppercase tracking-[0.24em] text-slate-500">
-                    {product.brand}
-                  </span>
-                  <h3 className="mt-4 text-2xl font-semibold text-slate-900">
-                    {product.name}
-                  </h3>
-                  <p className="mt-2 text-sm text-slate-500 line-clamp-2">
-                    {product.description}
-                  </p>
-                  <p className="mt-3 text-3xl font-bold text-slate-900">
-                    {product.price}
-                  </p>
-                  <div className="mt-5 flex gap-3">
-                    <AddToCartButton product={product} />
-                    <Link
-                      href={`/product/${product.slug}`}
-                      className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                    >
-                      Details
-                    </Link>
-                  </div>
-                </article>
+                <ProductCard key={product._id} product={product} />
               ))}
             </div>
           )}
