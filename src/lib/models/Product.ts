@@ -8,7 +8,7 @@ const packageOptionSchema = new Schema({
 const productSchema = new Schema(
   {
     name: { type: String, required: true, trim: true },
-    brand: { type: String, required: true, trim: true },
+    // brand: { type: String, required: true, trim: true },
     price: { type: String, required: true },
     description: { type: String, default: "" },
     image: { type: String, default: "" },

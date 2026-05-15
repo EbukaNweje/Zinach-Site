@@ -5,7 +5,7 @@ export interface Product {
   _id: string;
   slug: string;
   name: string;
-  brand: string;
+  // brand: string;
   price: string;
   description: string;
   image: string;

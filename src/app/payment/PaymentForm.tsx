@@ -13,7 +13,7 @@ export type PaymentMethod =
   | "Venmo"
   | "Credit Card"
   | "BTC"
-  | "BTC address";
+  | "BTC";
 
 // Static instructions per method
 const methodInstructions: Record<string, string[]> = {

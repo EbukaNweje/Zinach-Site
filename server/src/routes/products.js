@@ -30,18 +30,18 @@ router.get("/:slug", async (req, res) => {
 // POST /api/products — create product (with optional image upload)
 router.post("/", uploadProductImage.single("image"), async (req, res) => {
   try {
-    const { name, brand, price, description, packageOptions } = req.body;
+    const { name, price, description, packageOptions } = req.body;
 
-    if (!name || !brand || !price) {
+    if (!name || !price) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields: name, brand, price",
+        message: "Missing required fields: name, price",
       });
     }
 
     const product = new Product({
       name,
-      brand,
+      // brand,
       price,
       description,
       image: req.file ? req.file.path : "",
@@ -65,7 +65,7 @@ router.put("/:id", uploadProductImage.single("image"), async (req, res) => {
         .status(404)
         .json({ success: false, message: "Product not found" });
 
-    const { name, brand, price, description, packageOptions } = req.body;
+    const { name, price, description, packageOptions } = req.body;
 
     // If a new image was uploaded, delete the old one from Cloudinary
     if (req.file && product.imagePublicId) {
@@ -73,7 +73,7 @@ router.put("/:id", uploadProductImage.single("image"), async (req, res) => {
     }
 
     product.name = name ?? product.name;
-    product.brand = brand ?? product.brand;
+    // product.brand = brand ?? product.brand;
     product.price = price ?? product.price;
     product.description = description ?? product.description;
     if (req.file) {

@@ -22,7 +22,7 @@ const PAYMENT_METHODS = [
   "Zelle",
   "PayPal",
   "Venmo",
-  "BTC address",
+  "BTC ",
 ] as const;
 type PaymentMethodName = (typeof PAYMENT_METHODS)[number];
 
@@ -35,7 +35,7 @@ type PackageOption = { label: string; price: string };
 type LiveProduct = {
   _id: string;
   name: string;
-  brand: string;
+  // brand: string;
   price: string;
   description: string;
   image: string;
@@ -170,7 +170,7 @@ export default function AdminPage() {
     try {
       const formData = new FormData();
       formData.append("name", editingProduct.name);
-      formData.append("brand", editingProduct.brand);
+      // formData.append("brand", editingProduct.brand);
       formData.append(
         "price",
         editingProduct.price.startsWith("$")
@@ -211,7 +211,6 @@ export default function AdminPage() {
 
   const [product, setProduct] = useState<Omit<LiveProduct, "_id" | "slug">>({
     name: "",
-    brand: "",
     price: "",
     description: "",
     image: "",
@@ -319,7 +318,7 @@ export default function AdminPage() {
     try {
       const formData = new FormData();
       formData.append("name", product.name);
-      formData.append("brand", product.brand);
+      // formData.append("brand", product.brand);
       formData.append(
         "price",
         product.price.startsWith("$") ? product.price : `$${product.price}`,
@@ -338,7 +337,7 @@ export default function AdminPage() {
       await fetchLiveProducts();
       setProduct({
         name: "",
-        brand: "",
+        // brand: "",
         price: "",
         description: "",
         image: "",
@@ -556,7 +555,7 @@ export default function AdminPage() {
                         placeholder="Ivermectin 9mg"
                       />
                     </label>
-                    <label className="block">
+                    {/* <label className="block">
                       <span className="text-sm font-medium text-slate-600">
                         Brand
                       </span>
@@ -568,7 +567,7 @@ export default function AdminPage() {
                         className="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
                         placeholder="Edenbridge"
                       />
-                    </label>
+                    </label> */}
                     <label className="block">
                       <span className="text-sm font-medium text-slate-600">
                         Price
