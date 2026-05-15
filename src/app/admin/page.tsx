@@ -56,13 +56,15 @@ type PackageOption = {
   price: string;
 };
 
-type Product = {
+type LiveProduct = {
+  _id: string;
   name: string;
   brand: string;
   price: string;
   description: string;
   image: string;
   packageOptions: PackageOption[];
+  slug: string;
 };
 
 export default function AdminPage() {
@@ -87,9 +89,7 @@ export default function AdminPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (isAuthenticated) fetchOrders();
-  }, [isAuthenticated, fetchOrders]);
+  // (auth effect handled below with fetchLiveProducts)
 
   const metrics = [
     { label: "Total orders", value: String(liveOrders.length) },
@@ -141,7 +141,93 @@ export default function AdminPage() {
     }
   };
 
-  const [product, setProduct] = useState<Product>({
+  // ── Live products ──────────────────────────────────────────────────────────
+  const [liveProducts, setLiveProducts] = useState<LiveProduct[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<LiveProduct | null>(
+    null,
+  );
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editMessage, setEditMessage] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const fetchLiveProducts = useCallback(async () => {
+    setProductsLoading(true);
+    try {
+      const res = await fetch("/api/products");
+      const data = await res.json();
+      if (data.success) setLiveProducts(data.data);
+    } catch {
+      // silently fail
+    } finally {
+      setProductsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrders();
+      fetchLiveProducts();
+    }
+  }, [isAuthenticated, fetchOrders, fetchLiveProducts]);
+
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setLiveProducts((prev) => prev.filter((p) => p._id !== id));
+        setDeleteConfirmId(null);
+      }
+    } catch {
+      // silently fail
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    setEditSubmitting(true);
+    setEditMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("name", editingProduct.name);
+      formData.append("brand", editingProduct.brand);
+      formData.append("price", editingProduct.price);
+      formData.append("description", editingProduct.description);
+      formData.append(
+        "packageOptions",
+        JSON.stringify(editingProduct.packageOptions),
+      );
+      if (editImageFile) formData.append("image", editImageFile);
+
+      const res = await fetch(`/api/products/${editingProduct._id}`, {
+        method: "PUT",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to update.");
+
+      setLiveProducts((prev) =>
+        prev.map((p) => (p._id === editingProduct._id ? data.data : p)),
+      );
+      setEditMessage("Product updated successfully.");
+      setEditImageFile(null);
+      window.setTimeout(() => {
+        setEditMessage("");
+        setEditingProduct(null);
+      }, 1500);
+    } catch (err: unknown) {
+      setEditMessage(
+        err instanceof Error ? err.message : "Error updating product.",
+      );
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  const [product, setProduct] = useState<Omit<LiveProduct, "_id" | "slug">>({
     name: "",
     brand: "",
     price: "",
@@ -149,7 +235,6 @@ export default function AdminPage() {
     image: "",
     packageOptions: [],
   });
-  const [products, setProducts] = useState<Product[]>([]);
   const [productMessage, setProductMessage] = useState("");
   const [productSubmitting, setProductSubmitting] = useState(false);
   const [newPackageLabel, setNewPackageLabel] = useState("");
@@ -194,7 +279,10 @@ export default function AdminPage() {
   });
   const [paymentMessage, setPaymentMessage] = useState("");
 
-  const handleProductChange = (key: keyof Product, value: string) => {
+  const handleProductChange = (
+    key: keyof Omit<LiveProduct, "_id" | "slug">,
+    value: string,
+  ) => {
     setProduct((current) => ({ ...current, [key]: value }));
   };
 
@@ -237,7 +325,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to add product.");
 
-      setProducts((current) => [...current, data.data]);
+      await fetchLiveProducts();
       setProduct({
         name: "",
         brand: "",
@@ -566,52 +654,237 @@ export default function AdminPage() {
                     {productSubmitting ? "Adding…" : "Add product"}
                   </button>
                 </form>
+              </section>
 
-                {products.length > 0 && (
-                  <div className="mt-10 rounded-3xl border border-slate-200 bg-slate-50 p-6">
+              {/* ── Manage Products ── */}
+              <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl xl:col-span-2">
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
                     <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
-                      Added products
+                      Product management
                     </p>
-                    <div className="mt-4 space-y-4">
-                      {products.map((item, index) => (
-                        <div
-                          key={`${item.name}-${index}`}
-                          className="rounded-3xl border border-slate-200 bg-white p-4"
-                        >
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                              <p className="text-sm font-semibold text-slate-900">
-                                {item.name}
-                              </p>
-                              <p className="text-sm text-slate-500">
-                                {item.brand}
-                              </p>
-                              {item.packageOptions &&
-                                item.packageOptions.length > 0 && (
-                                  <ul className="mt-1 text-xs text-slate-600">
-                                    {item.packageOptions.map((opt, idx) => (
-                                      <li key={idx}>
-                                        {opt.label} — {opt.price}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
+                    <h2 className="mt-3 text-2xl font-semibold text-slate-900">
+                      All products
+                    </h2>
+                  </div>
+                  <button
+                    onClick={fetchLiveProducts}
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                {productsLoading ? (
+                  <p className="py-8 text-center text-sm text-slate-400">
+                    Loading products…
+                  </p>
+                ) : liveProducts.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-10 text-center">
+                    <p className="text-sm text-slate-500">
+                      No products yet. Add one above.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {liveProducts.map((p) => (
+                      <div
+                        key={p._id}
+                        className="rounded-3xl border border-slate-200 bg-slate-50 p-5"
+                      >
+                        {editingProduct?._id === p._id ? (
+                          /* ── Inline edit form ── */
+                          <form
+                            onSubmit={handleEditSubmit}
+                            className="space-y-4"
+                          >
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">
+                                  Name
+                                </span>
+                                <input
+                                  value={editingProduct.name}
+                                  onChange={(e) =>
+                                    setEditingProduct({
+                                      ...editingProduct,
+                                      name: e.target.value,
+                                    })
+                                  }
+                                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">
+                                  Brand
+                                </span>
+                                <input
+                                  value={editingProduct.brand}
+                                  onChange={(e) =>
+                                    setEditingProduct({
+                                      ...editingProduct,
+                                      brand: e.target.value,
+                                    })
+                                  }
+                                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">
+                                  Price
+                                </span>
+                                <input
+                                  value={editingProduct.price}
+                                  onChange={(e) =>
+                                    setEditingProduct({
+                                      ...editingProduct,
+                                      price: e.target.value,
+                                    })
+                                  }
+                                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">
+                                  Replace image (optional)
+                                </span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) =>
+                                    setEditImageFile(
+                                      e.target.files?.[0] ?? null,
+                                    )
+                                  }
+                                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none"
+                                />
+                              </label>
+                              <label className="block sm:col-span-2">
+                                <span className="text-xs font-medium text-slate-500">
+                                  Description
+                                </span>
+                                <textarea
+                                  value={editingProduct.description}
+                                  onChange={(e) =>
+                                    setEditingProduct({
+                                      ...editingProduct,
+                                      description: e.target.value,
+                                    })
+                                  }
+                                  rows={2}
+                                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                                />
+                              </label>
                             </div>
-                            <p className="text-sm font-semibold text-slate-900">
-                              {item.price}
-                            </p>
+
+                            {editMessage && (
+                              <div
+                                className={`rounded-2xl px-4 py-2 text-sm ${
+                                  editMessage.includes("success")
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-red-50 text-red-700 border border-red-200"
+                                }`}
+                              >
+                                {editMessage}
+                              </div>
+                            )}
+
+                            <div className="flex gap-3">
+                              <button
+                                type="submit"
+                                disabled={editSubmitting}
+                                className="rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                              >
+                                {editSubmitting ? "Saving…" : "Save changes"}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingProduct(null);
+                                  setEditMessage("");
+                                  setEditImageFile(null);
+                                }}
+                                className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        ) : (
+                          /* ── Product row ── */
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-4">
+                              {p.image ? (
+                                <img
+                                  src={p.image}
+                                  alt={p.name}
+                                  className="h-14 w-14 rounded-2xl border border-slate-200 bg-white object-cover flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="h-14 w-14 rounded-2xl bg-slate-200 flex-shrink-0" />
+                              )}
+                              <div>
+                                <p className="font-semibold text-slate-900">
+                                  {p.name}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {p.brand}
+                                </p>
+                                <p className="text-sm font-semibold text-slate-700 mt-0.5">
+                                  {p.price}
+                                </p>
+                                {p.packageOptions?.length > 0 && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    {p.packageOptions.length} package option
+                                    {p.packageOptions.length > 1 ? "s" : ""}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setEditingProduct(p);
+                                  setEditMessage("");
+                                  setEditImageFile(null);
+                                }}
+                                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                              >
+                                Edit
+                              </button>
+
+                              {deleteConfirmId === p._id ? (
+                                <>
+                                  <span className="text-xs text-red-600 font-medium">
+                                    Sure?
+                                  </span>
+                                  <button
+                                    onClick={() => handleDeleteProduct(p._id)}
+                                    className="rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                                  >
+                                    Yes, delete
+                                  </button>
+                                  <button
+                                    onClick={() => setDeleteConfirmId(null)}
+                                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                                  >
+                                    Cancel
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => setDeleteConfirmId(p._id)}
+                                  className="rounded-full border border-red-200 bg-red-50 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-100"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <p className="mt-3 text-sm text-slate-600">
-                            {item.description}
-                          </p>
-                          {item.image && (
-                            <p className="mt-2 text-xs text-slate-500">
-                              Image URL: {item.image}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </section>
