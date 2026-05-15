@@ -18,7 +18,20 @@ export async function GET(
         { success: false, message: "Not found" },
         { status: 404 },
       );
-    return NextResponse.json({ success: true, data: product });
+    const safe = {
+      ...product,
+      _id: String((product as any)._id),
+      packageOptions: Array.isArray(product.packageOptions)
+        ? product.packageOptions.map((opt: any) => ({
+            ...opt,
+            _id: opt && opt._id ? String(opt._id) : undefined,
+          }))
+        : [],
+      features: Array.isArray(product.features) ? product.features : [],
+      createdAt: product.createdAt ? new Date(product.createdAt).toISOString() : undefined,
+      updatedAt: product.updatedAt ? new Date(product.updatedAt).toISOString() : undefined,
+    };
+    return NextResponse.json({ success: true, data: safe });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Server error";
     return NextResponse.json({ success: false, message: msg }, { status: 500 });
@@ -62,7 +75,21 @@ export async function PUT(
     }
 
     await product.save();
-    return NextResponse.json({ success: true, data: product });
+    const saved = product.toObject ? product.toObject() : product;
+    const safeSaved = {
+      ...saved,
+      _id: String((saved as any)._id),
+      packageOptions: Array.isArray(saved.packageOptions)
+        ? saved.packageOptions.map((opt: any) => ({
+            ...opt,
+            _id: opt && opt._id ? String(opt._id) : undefined,
+          }))
+        : [],
+      features: Array.isArray(saved.features) ? saved.features : [],
+      createdAt: saved.createdAt ? new Date(saved.createdAt).toISOString() : undefined,
+      updatedAt: saved.updatedAt ? new Date(saved.updatedAt).toISOString() : undefined,
+    };
+    return NextResponse.json({ success: true, data: safeSaved });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Server error";
     return NextResponse.json({ success: false, message: msg }, { status: 400 });

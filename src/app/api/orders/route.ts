@@ -8,7 +8,19 @@ export async function GET() {
   try {
     await connectDB();
     const orders = await OrderModel.find().sort({ createdAt: -1 }).lean();
-    return NextResponse.json({ success: true, data: orders });
+    const safe = (orders as any[]).map((o) => ({
+      ...o,
+      _id: String(o._id),
+      items: Array.isArray(o.items)
+        ? o.items.map((it: any) => ({
+            ...it,
+            _id: it && it._id ? String(it._id) : undefined,
+          }))
+        : [],
+      createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
+      updatedAt: o.updatedAt ? new Date(o.updatedAt).toISOString() : undefined,
+    }));
+    return NextResponse.json({ success: true, data: safe });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Server error";
     return NextResponse.json({ success: false, message: msg }, { status: 500 });
@@ -68,7 +80,20 @@ export async function POST(req: NextRequest) {
       ),
     ]);
 
-    return NextResponse.json({ success: true, data: order }, { status: 201 });
+    const o = order.toObject ? order.toObject() : order;
+    const safeOrder = {
+      ...o,
+      _id: String((o as any)._id),
+      items: Array.isArray(o.items)
+        ? o.items.map((it: any) => ({
+            ...it,
+            _id: it && it._id ? String(it._id) : undefined,
+          }))
+        : [],
+      createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
+      updatedAt: o.updatedAt ? new Date(o.updatedAt).toISOString() : undefined,
+    };
+    return NextResponse.json({ success: true, data: safeOrder }, { status: 201 });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Server error";
     return NextResponse.json({ success: false, message: msg }, { status: 400 });

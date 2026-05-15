@@ -1,14 +1,65 @@
-import nodemailer from "nodemailer";
+// Use Brove (or any HTTP email proxy) when configured. Fall back to throwing
+// helpful errors if not present. This makes the app independent of
+// `nodemailer` and uses a simple HTTP POST interface to send messages.
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const BROVE_API_URL = process.env.BROVE_API_URL; // e.g. https://api.brove.example/send
+const BROVE_API_KEY = process.env.BROVE_API_KEY;
+const EMAIL_FROM = process.env.EMAIL_FROM;
+
+async function sendViaBrove({
+  to,
+  subject,
+  html,
+  replyTo,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+}) {
+  if (!BROVE_API_URL || !BROVE_API_KEY) {
+    throw new Error(
+      "Brove is not configured. Set BROVE_API_URL and BROVE_API_KEY in your environment.",
+    );
+  }
+
+  const payload: Record<string, unknown> = {
+    from: EMAIL_FROM,
+    to,
+    subject,
+    html,
+  };
+  if (replyTo) payload.replyTo = replyTo;
+
+  // Brevo (formerly Sendinblue) expects the API key in the `api-key` header
+  // and a specific payload shape for the /smtp/email endpoint.
+  const brevoPayload: Record<string, unknown> = {
+    sender: { email: EMAIL_FROM },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+  };
+  if (replyTo) brevoPayload.replyTo = { email: replyTo };
+
+  const res = await fetch(BROVE_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": BROVE_API_KEY,
+    },
+    body: JSON.stringify(brevoPayload),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    if (res.status === 401) {
+      throw new Error(
+        `Brove send failed: 401 Unauthorized — token invalid or expired. Verify BROVE_API_KEY in your environment.`,
+      );
+    }
+    throw new Error(`Brove send failed: ${res.status} ${text}`);
+  }
+}
 
 // ── Shared layout wrapper ─────────────────────────────────────────────────────
 function wrapLayout(content: string): string {
@@ -188,8 +239,7 @@ function buildContactEmailHtml({
 // ── Exported send functions ───────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function sendOrderConfirmation(order: any) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+  await sendViaBrove({
     to: order.customer.email,
     subject: `Order Confirmed — ${order.orderNumber} | Dr William Makis MD`,
     html: buildOrderConfirmationHtml(order),
@@ -198,8 +248,7 @@ export async function sendOrderConfirmation(order: any) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function sendPaymentConfirmation(order: any) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+  await sendViaBrove({
     to: order.customer.email,
     subject: `Payment Processed — ${order.orderNumber} | Dr William Makis MD`,
     html: buildPaymentConfirmationHtml(order),
@@ -208,9 +257,8 @@ export async function sendPaymentConfirmation(order: any) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function sendAdminNotification(order: any) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
-    to: process.env.ADMIN_EMAIL,
+  await sendViaBrove({
+    to: process.env.ADMIN_EMAIL as string,
     subject: `New Order ${order.orderNumber} — $${order.total} via ${order.paymentMethod}`,
     html: buildAdminNotificationHtml(order),
   });
@@ -222,11 +270,10 @@ export async function sendContactEmail(data: {
   subject: string;
   message: string;
 }) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
-    to: process.env.ADMIN_EMAIL,
-    replyTo: data.email,
+  await sendViaBrove({
+    to: process.env.ADMIN_EMAIL as string,
     subject: `Contact: ${data.subject}`,
     html: buildContactEmailHtml(data),
+    replyTo: data.email,
   });
 }

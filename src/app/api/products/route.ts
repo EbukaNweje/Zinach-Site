@@ -7,7 +7,20 @@ export async function GET() {
   try {
     await connectDB();
     const products = await ProductModel.find().sort({ createdAt: -1 }).lean();
-    return NextResponse.json({ success: true, data: products });
+    const safe = (products as any[]).map((p) => ({
+      ...p,
+      _id: String(p._id),
+      packageOptions: Array.isArray(p.packageOptions)
+        ? p.packageOptions.map((opt: any) => ({
+            ...opt,
+            _id: opt && opt._id ? String(opt._id) : undefined,
+          }))
+        : [],
+      features: Array.isArray(p.features) ? p.features : [],
+      createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : undefined,
+      updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : undefined,
+    }));
+    return NextResponse.json({ success: true, data: safe });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Server error";
     return NextResponse.json({ success: false, message: msg }, { status: 500 });

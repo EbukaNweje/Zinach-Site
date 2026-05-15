@@ -1,14 +1,50 @@
-const nodemailer = require("nodemailer");
+// Use Brove (or any HTTP email proxy) when configured. Provide the
+// `BROVE_API_URL` and `BROVE_API_KEY` environment variables. We use
+// `fetch` to POST a JSON payload to the configured endpoint.
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: false, // true for port 465
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const BROVE_API_URL = process.env.BROVE_API_URL;
+const BROVE_API_KEY = process.env.BROVE_API_KEY;
+const EMAIL_FROM = process.env.EMAIL_FROM;
+
+async function sendViaBrove({ to, subject, html, replyTo }) {
+  if (!BROVE_API_URL || !BROVE_API_KEY) {
+    throw new Error(
+      "Brove is not configured. Set BROVE_API_URL and BROVE_API_KEY in your environment.",
+    );
+  }
+
+  const payload = { from: EMAIL_FROM, to, subject, html };
+  if (replyTo) payload.replyTo = replyTo;
+
+  // Brevo expects the API key in the `api-key` header and a specific
+  // payload for `/smtp/email`.
+  const brevoPayload = {
+    sender: { email: EMAIL_FROM },
+    to: [{ email: to }],
+    subject,
+    htmlContent: html,
+  };
+  if (replyTo) brevoPayload.replyTo = { email: replyTo };
+
+  const res = await fetch(BROVE_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "api-key": BROVE_API_KEY,
+    },
+    body: JSON.stringify(brevoPayload),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    if (res.status === 401) {
+      throw new Error(
+        "Brove send failed: 401 Unauthorized — token invalid or expired. Verify BROVE_API_KEY in your server environment.",
+      );
+    }
+    throw new Error(`Brove send failed: ${res.status} ${text}`);
+  }
+}
 
 // ── Shared layout wrapper ─────────────────────────────────────────────────────
 function wrapLayout(content) {
@@ -217,8 +253,7 @@ function buildContactEmailHtml({ name, email, subject, message }) {
 
 // ── Send helpers ──────────────────────────────────────────────────────────────
 async function sendOrderConfirmation(order) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+  await sendViaBrove({
     to: order.customer.email,
     subject: `Order Confirmed — ${order.orderNumber} | Dr William Makis MD`,
     html: buildOrderConfirmationHtml(order),
@@ -226,8 +261,7 @@ async function sendOrderConfirmation(order) {
 }
 
 async function sendPaymentConfirmation(order) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+  await sendViaBrove({
     to: order.customer.email,
     subject: `Payment Processed — ${order.orderNumber} | Dr William Makis MD`,
     html: buildPaymentConfirmationHtml(order),
@@ -235,8 +269,7 @@ async function sendPaymentConfirmation(order) {
 }
 
 async function sendAdminNotification(order) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+  await sendViaBrove({
     to: process.env.ADMIN_EMAIL,
     subject: `New Order ${order.orderNumber} — $${order.total} via ${order.paymentMethod}`,
     html: buildAdminNotificationHtml(order),
@@ -244,12 +277,11 @@ async function sendAdminNotification(order) {
 }
 
 async function sendContactEmail(data) {
-  await transporter.sendMail({
-    from: process.env.EMAIL_FROM,
+  await sendViaBrove({
     to: process.env.ADMIN_EMAIL,
-    replyTo: data.email,
     subject: `Contact: ${data.subject}`,
     html: buildContactEmailHtml(data),
+    replyTo: data.email,
   });
 }
 
