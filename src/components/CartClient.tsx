@@ -105,7 +105,9 @@ export default function CartClient() {
                   <div className="h-16 w-16 flex-shrink-0 rounded-2xl bg-slate-200" />
                 )}
                 <div>
-                  <p className="text-xs text-slate-500">{item.brand}</p>
+                  {item.brand ? (
+                    <p className="text-xs text-slate-500">{item.brand}</p>
+                  ) : null}
                   <h2 className="text-lg font-semibold text-slate-900">
                     {item.name}
                   </h2>

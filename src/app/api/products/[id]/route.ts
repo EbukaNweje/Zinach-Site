@@ -42,14 +42,12 @@ export async function PUT(
       );
 
     const name = formData.get("name") as string | null;
-    const brand = formData.get("brand") as string | null;
     const price = formData.get("price") as string | null;
     const description = formData.get("description") as string | null;
     const packageOptionsRaw = formData.get("packageOptions") as string | null;
     const imageFile = formData.get("image") as File | null;
 
     if (name) product.name = name;
-    if (brand) product.brand = brand;
     if (price) product.price = price;
     if (description !== null) product.description = description;
     if (packageOptionsRaw)

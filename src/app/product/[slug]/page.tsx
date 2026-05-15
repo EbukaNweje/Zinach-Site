@@ -38,10 +38,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
               )}
             </div>
 
-            <p className="mt-6 text-sm uppercase tracking-[0.24em] text-slate-500">
-              {product.brand}
-            </p>
-            <h1 className="mt-2 text-5xl font-semibold text-slate-900">
+            <h1 className="mt-6 text-5xl font-semibold text-slate-900">
               {product.name}
             </h1>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">

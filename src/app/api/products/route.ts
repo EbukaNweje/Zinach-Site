@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
 
     const name = formData.get("name") as string;
-    const brand = formData.get("brand") as string;
     const price = formData.get("price") as string;
     const description = formData.get("description") as string;
     const packageOptions = JSON.parse(
@@ -45,7 +44,6 @@ export async function POST(req: NextRequest) {
 
     const product = new ProductModel({
       name,
-      brand,
       price,
       description,
       image: imageUrl,

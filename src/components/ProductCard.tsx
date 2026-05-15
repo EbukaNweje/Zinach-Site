@@ -31,9 +31,11 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Content */}
       <div className="flex flex-1 flex-col p-5 gap-3">
         {/* Brand badge */}
-        <span className="inline-flex w-fit rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold tracking-wide text-slate-600">
-          {product.brand}
-        </span>
+        {product.brand ? (
+          <span className="inline-flex w-fit rounded-xl border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold tracking-wide text-slate-600">
+            {product.brand}
+          </span>
+        ) : null}
 
         {/* Name */}
         <h2 className="text-xl font-bold text-[#1a2744]">{product.name}</h2>

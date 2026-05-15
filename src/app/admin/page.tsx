@@ -555,19 +555,6 @@ export default function AdminPage() {
                         placeholder="Ivermectin 9mg"
                       />
                     </label>
-                    {/* <label className="block">
-                      <span className="text-sm font-medium text-slate-600">
-                        Brand
-                      </span>
-                      <input
-                        value={product.brand}
-                        onChange={(e) =>
-                          handleProductChange("brand", e.target.value)
-                        }
-                        className="mt-2 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-                        placeholder="Edenbridge"
-                      />
-                    </label> */}
                     <label className="block">
                       <span className="text-sm font-medium text-slate-600">
                         Price
@@ -761,21 +748,6 @@ export default function AdminPage() {
                               </label>
                               <label className="block">
                                 <span className="text-xs font-medium text-slate-500">
-                                  Brand
-                                </span>
-                                <input
-                                  value={editingProduct.brand}
-                                  onChange={(e) =>
-                                    setEditingProduct({
-                                      ...editingProduct,
-                                      brand: e.target.value,
-                                    })
-                                  }
-                                  className="mt-1 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
-                                />
-                              </label>
-                              <label className="block">
-                                <span className="text-xs font-medium text-slate-500">
                                   Price
                                 </span>
                                 <div className="relative mt-1">
@@ -882,9 +854,6 @@ export default function AdminPage() {
                               <div>
                                 <p className="font-semibold text-slate-900">
                                   {p.name}
-                                </p>
-                                <p className="text-xs text-slate-500">
-                                  {p.brand}
                                 </p>
                                 <p className="text-sm font-semibold text-slate-700 mt-0.5">
                                   {p.price}
