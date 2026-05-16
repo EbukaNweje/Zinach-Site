@@ -11,9 +11,18 @@ export type PaymentMethod =
   | "Zelle"
   | "PayPal"
   | "Venmo"
+  | "Interac"
   | "Credit Card"
-  | "BTC"
   | "BTC";
+
+type Address = {
+  streetAddress: string;
+  streetAddress2: string;
+  city: string;
+  stateProvince: string;
+  postalCode: string;
+  country: string;
+};
 
 // Static instructions per method
 const methodInstructions: Record<string, string[]> = {
@@ -46,6 +55,12 @@ const methodInstructions: Record<string, string[]> = {
     "Send payment for the exact amount.",
     "Include the last digit code in your notes.",
     "Save a screenshot of the transfer.",
+  ],
+  Interac: [
+    "Open your Interac e-Transfer app or mobile banking.",
+    "Enter the email and name shown below.",
+    "Send the exact total amount.",
+    "Save the transfer confirmation as proof.",
   ],
   "Credit Card": [
     "Enter your card number, expiration, and CVV.",
@@ -134,12 +149,18 @@ export default function PaymentForm({
   customerName: initialName,
   customerEmail: initialEmail,
   customerPhone: initialPhone,
+  billingAddress,
+  shippingAddress,
+  sameShipping,
 }: {
   selectedMethod: PaymentMethod;
   amount: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  billingAddress?: Address;
+  shippingAddress?: Address;
+  sameShipping?: boolean;
 }) {
   const { cartItems, clearCart } = useCart();
   const method = selectedMethod;
@@ -195,7 +216,60 @@ export default function PaymentForm({
   const [showModal, setShowModal] = useState(false);
   const [placedOrderNumber, setPlacedOrderNumber] = useState("");
   const [modalAmount, setModalAmount] = useState("");
+  const [initialBillingAddress] = useState<Address>(
+    billingAddress ?? {
+      streetAddress: "",
+      streetAddress2: "",
+      city: "",
+      stateProvince: "",
+      postalCode: "",
+      country: "",
+    },
+  );
+  const [initialShippingAddress] = useState<Address>(
+    shippingAddress ?? {
+      streetAddress: "",
+      streetAddress2: "",
+      city: "",
+      stateProvince: "",
+      postalCode: "",
+      country: "",
+    },
+  );
   const router = useRouter();
+
+  const [billingStreetAddress, setBillingStreetAddress] = useState(
+    initialBillingAddress.streetAddress,
+  );
+  const [billingStreetAddress2, setBillingStreetAddress2] = useState(
+    initialBillingAddress.streetAddress2,
+  );
+  const [billingCity, setBillingCity] = useState(initialBillingAddress.city);
+  const [billingStateProvince, setBillingStateProvince] = useState(
+    initialBillingAddress.stateProvince,
+  );
+  const [billingPostalCode, setBillingPostalCode] = useState(
+    initialBillingAddress.postalCode,
+  );
+  const [billingCountry, setBillingCountry] = useState(
+    initialBillingAddress.country,
+  );
+  const [shippingStreetAddress, setShippingStreetAddress] = useState(
+    initialShippingAddress.streetAddress,
+  );
+  const [shippingStreetAddress2, setShippingStreetAddress2] = useState(
+    initialShippingAddress.streetAddress2,
+  );
+  const [shippingCity, setShippingCity] = useState(initialShippingAddress.city);
+  const [shippingStateProvince, setShippingStateProvince] = useState(
+    initialShippingAddress.stateProvince,
+  );
+  const [shippingPostalCode, setShippingPostalCode] = useState(
+    initialShippingAddress.postalCode,
+  );
+  const [shippingCountry, setShippingCountry] = useState(
+    initialShippingAddress.country,
+  );
 
   const handleCopy = async (label: string, text: string) => {
     try {
@@ -219,6 +293,15 @@ export default function PaymentForm({
     setSubmitStatus("submitting");
     setErrorMessage(null);
 
+    if (
+      showCardFields &&
+      (!cardName || !cardNumber || !cardExpMonth || !cardExpYear || !cardCvc)
+    ) {
+      setErrorMessage("Please enter all card details before continuing.");
+      setSubmitStatus("idle");
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append(
@@ -227,8 +310,22 @@ export default function PaymentForm({
           name: customerName,
           email: customerEmail,
           phone: customerPhone,
+          address: shippingStreetAddress,
         }),
       );
+      formData.append("billingStreetAddress", billingStreetAddress);
+      formData.append("billingStreetAddress2", billingStreetAddress2);
+      formData.append("billingCity", billingCity);
+      formData.append("billingStateProvince", billingStateProvince);
+      formData.append("billingPostalCode", billingPostalCode);
+      formData.append("billingCountry", billingCountry);
+      formData.append("shippingStreetAddress", shippingStreetAddress);
+      formData.append("shippingStreetAddress2", shippingStreetAddress2);
+      formData.append("shippingCity", shippingCity);
+      formData.append("shippingStateProvince", shippingStateProvince);
+      formData.append("shippingPostalCode", shippingPostalCode);
+      formData.append("shippingCountry", shippingCountry);
+      formData.append("sameShipping", String(sameShipping));
 
       const items =
         cartItems && cartItems.length > 0
@@ -240,6 +337,14 @@ export default function PaymentForm({
               packageOption: item.packageOption ?? "",
             }))
           : [{ name: "Order", price: amount, quantity: 1 }];
+
+      if (showCardFields) {
+        formData.append("cardName", cardName);
+        formData.append("cardNumber", cardNumber);
+        formData.append("cardExpMonth", cardExpMonth);
+        formData.append("cardExpYear", cardExpYear);
+        formData.append("cardCvc", cardCvc);
+      }
 
       formData.append("items", JSON.stringify(items));
       formData.append("total", amount);

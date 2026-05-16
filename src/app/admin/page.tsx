@@ -9,10 +9,34 @@ const ADMIN_PASSWORD = "Zinach2026";
 type LiveOrder = {
   _id: string;
   orderNumber: string;
-  customer: { name: string; email: string };
+  customer: {
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+  };
+  billingAddress?: {
+    streetAddress?: string;
+    streetAddress2?: string;
+    city?: string;
+    stateProvince?: string;
+    postalCode?: string;
+    country?: string;
+  };
+  shippingAddress?: {
+    streetAddress?: string;
+    streetAddress2?: string;
+    city?: string;
+    stateProvince?: string;
+    postalCode?: string;
+    country?: string;
+  };
   total: string;
   paymentMethod: string;
   paymentStatus: string;
+  proofImageUrl?: string;
+  paymentDetails?: Record<string, string>;
+  notes?: string;
   createdAt: string;
 };
 
@@ -22,7 +46,8 @@ const PAYMENT_METHODS = [
   "Zelle",
   "PayPal",
   "Venmo",
-  "BTC ",
+  "Interac",
+  "BTC",
 ] as const;
 type PaymentMethodName = (typeof PAYMENT_METHODS)[number];
 
@@ -232,6 +257,39 @@ export default function AdminPage() {
     });
     return empty;
   });
+
+  const handleSelectPaymentMethod = (method: PaymentMethodName) => {
+    setPaymentMethod(method);
+    setPaymentMessage("");
+    setNewFieldLabel("");
+    setNewFieldValue("");
+  };
+
+  const paymentFieldPlaceholders: Record<
+    PaymentMethodName,
+    { label: string; value: string }
+  > = {
+    Chime: { label: "New label (e.g. Tag)", value: "Value (e.g. @DrWilliam)" },
+    "Apple Pay": {
+      label: "New label (e.g. Email)",
+      value: "Value (e.g. you@example.com)",
+    },
+    Zelle: {
+      label: "New label (e.g. Email)",
+      value: "Value (e.g. you@example.com)",
+    },
+    PayPal: {
+      label: "New label (e.g. Email)",
+      value: "Value (e.g. you@example.com)",
+    },
+    Venmo: { label: "New label (e.g. Tag)", value: "Value (e.g. @DrWilliam)" },
+    Interac: {
+      label: "New label (e.g. Email)",
+      value: "Value (e.g. you@example.com)",
+    },
+    BTC: { label: "New label (e.g. Address)", value: "Value (e.g. bc1...)" },
+  };
+
   const [paymentMessage, setPaymentMessage] = useState("");
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   // New field being added
@@ -247,7 +305,7 @@ export default function AdminPage() {
         const map = { ...paymentInfoMap };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data.data.forEach((item: any) => {
-          if (PAYMENT_METHODS.includes(item.method)) {
+          if (PAYMENT_METHODS.includes(item.method) && item.fields) {
             const fields = Object.entries(
               item.fields as Record<string, string>,
             ).map(([label, value]) => ({ label, value }));
@@ -260,6 +318,19 @@ export default function AdminPage() {
       /* silently fail */
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [selectedOrder, setSelectedOrder] = useState<LiveOrder | null>(null);
+
+  const formatCardNumber = (value?: string) => {
+    if (!value) return "";
+    return value.replace(/\D/g, "");
+  };
+
+  const handleViewOrderDetails = (order: LiveOrder) => {
+    setSelectedOrder(order);
+  };
+
+  const closeOrderDetails = () => setSelectedOrder(null);
 
   const handleAddPackageOption = () => {
     if (!newPackageLabel.trim() || !newPackagePrice.trim()) return;
@@ -934,10 +1005,7 @@ export default function AdminPage() {
                     <button
                       key={m}
                       type="button"
-                      onClick={() => {
-                        setPaymentMethod(m);
-                        setPaymentMessage("");
-                      }}
+                      onClick={() => handleSelectPaymentMethod(m)}
                       className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                         paymentMethod === m
                           ? "bg-slate-900 text-white"
@@ -958,7 +1026,10 @@ export default function AdminPage() {
                   ) : (
                     <div className="space-y-3">
                       {paymentInfoMap[paymentMethod].map((field, idx) => (
-                        <div key={idx} className="flex items-center gap-3">
+                        <div
+                          key={idx}
+                          className="flex flex-col gap-3 sm:flex-row sm:items-center"
+                        >
                           <input
                             value={field.label}
                             onChange={(e) =>
@@ -969,7 +1040,7 @@ export default function AdminPage() {
                               )
                             }
                             placeholder="Label (e.g. Tag)"
-                            className="w-1/3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-400"
+                            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-400 sm:w-1/3"
                           />
                           <input
                             value={field.value}
@@ -981,12 +1052,12 @@ export default function AdminPage() {
                               )
                             }
                             placeholder="Value (e.g. @DrWilliam)"
-                            className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-400"
+                            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-slate-400"
                           />
                           <button
                             type="button"
                             onClick={() => handleRemovePaymentField(idx)}
-                            className="rounded-full border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100"
+                            className="w-full rounded-full border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 sm:w-auto"
                           >
                             Remove
                           </button>
@@ -996,23 +1067,27 @@ export default function AdminPage() {
                   )}
 
                   {/* Add new field row */}
-                  <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3">
+                  <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 sm:flex-row sm:items-center">
                     <input
                       value={newFieldLabel}
                       onChange={(e) => setNewFieldLabel(e.target.value)}
-                      placeholder="New label (e.g. Email)"
-                      className="w-1/3 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                      placeholder={
+                        paymentFieldPlaceholders[paymentMethod].label
+                      }
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400 sm:w-1/3"
                     />
                     <input
                       value={newFieldValue}
                       onChange={(e) => setNewFieldValue(e.target.value)}
-                      placeholder="Value"
-                      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
+                      placeholder={
+                        paymentFieldPlaceholders[paymentMethod].value
+                      }
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-400"
                     />
                     <button
                       type="button"
                       onClick={handleAddPaymentField}
-                      className="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"
+                      className="w-full rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 sm:w-auto"
                     >
                       + Add
                     </button>
@@ -1074,70 +1149,452 @@ export default function AdminPage() {
                     <p className="text-sm text-slate-500">No orders yet.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-[1.75rem] border border-slate-200">
-                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                      <thead className="bg-slate-50 text-slate-500">
-                        <tr>
-                          <th className="px-6 py-4 font-semibold">Order</th>
-                          <th className="px-6 py-4 font-semibold">Customer</th>
-                          <th className="px-6 py-4 font-semibold">Amount</th>
-                          <th className="px-6 py-4 font-semibold">Method</th>
-                          <th className="px-6 py-4 font-semibold">Status</th>
-                          <th className="px-6 py-4 font-semibold">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 bg-white">
-                        {liveOrders.map((order) => (
-                          <tr key={order._id}>
-                            <td className="px-6 py-4 font-semibold text-slate-900">
-                              {order.orderNumber}
-                            </td>
-                            <td className="px-6 py-4">
-                              <p className="text-slate-900">
-                                {order.customer.name}
+                  <div className="space-y-4">
+                    <div className="space-y-4 md:hidden">
+                      {liveOrders.map((order) => (
+                        <div
+                          key={order._id}
+                          className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                                Order
                               </p>
-                              <p className="text-xs text-slate-400">
-                                {order.customer.email}
+                              <p className="font-semibold text-slate-900">
+                                {order.orderNumber}
                               </p>
-                            </td>
-                            <td className="px-6 py-4 font-semibold text-slate-900">
+                            </div>
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                                order.paymentStatus === "paid"
+                                  ? "bg-emerald-100 text-emerald-700"
+                                  : order.paymentStatus === "processing"
+                                    ? "bg-amber-100 text-amber-700"
+                                    : order.paymentStatus === "failed"
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {order.paymentStatus}
+                            </span>
+                          </div>
+                          <div className="mt-4 space-y-2 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold text-slate-900">
+                                Customer:
+                              </span>{" "}
+                              {order.customer.name}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-900">
+                                Email:
+                              </span>{" "}
+                              {order.customer.email}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-900">
+                                Amount:
+                              </span>{" "}
                               ${order.total}
-                            </td>
-                            <td className="px-6 py-4 text-slate-600">
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-900">
+                                Method:
+                              </span>{" "}
                               {order.paymentMethod}
-                            </td>
-                            <td className="px-6 py-4">
-                              <span
-                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                                  order.paymentStatus === "paid"
-                                    ? "bg-emerald-100 text-emerald-700"
-                                    : order.paymentStatus === "processing"
-                                      ? "bg-amber-100 text-amber-700"
-                                      : order.paymentStatus === "failed"
-                                        ? "bg-red-100 text-red-700"
-                                        : "bg-slate-100 text-slate-700"
-                                }`}
-                              >
-                                {order.paymentStatus}
+                            </p>
+                            <p className="flex flex-wrap items-center gap-2 text-slate-600">
+                              <span className="font-semibold text-slate-900">
+                                Proof:
                               </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              {order.paymentStatus !== "paid" && (
-                                <button
-                                  onClick={() => handleMarkPaid(order._id)}
-                                  className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                              {order.proofImageUrl ? (
+                                <a
+                                  href={order.proofImageUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs font-semibold text-slate-900 hover:text-slate-700"
                                 >
-                                  Mark paid
-                                </button>
+                                  View proof
+                                </a>
+                              ) : (
+                                <span className="text-xs text-slate-500">
+                                  No proof
+                                </span>
                               )}
-                            </td>
+                            </p>
+                          </div>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button
+                              onClick={() => handleViewOrderDetails(order)}
+                              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                            >
+                              View payment details
+                            </button>
+                            {order.proofImageUrl && (
+                              <a
+                                href={order.proofImageUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                              >
+                                Open proof
+                              </a>
+                            )}
+                            {order.paymentStatus !== "paid" && (
+                              <button
+                                onClick={() => handleMarkPaid(order._id)}
+                                className="rounded-full bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
+                              >
+                                Mark paid
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="hidden md:block overflow-x-auto rounded-[1.75rem] border border-slate-200">
+                      <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                        <thead className="bg-slate-50 text-slate-500">
+                          <tr>
+                            <th className="px-6 py-4 font-semibold">Order</th>
+                            <th className="px-6 py-4 font-semibold">
+                              Customer
+                            </th>
+                            <th className="px-6 py-4 font-semibold">Amount</th>
+                            <th className="px-6 py-4 font-semibold">Method</th>
+                            <th className="px-6 py-4 font-semibold">Proof</th>
+                            <th className="px-6 py-4 font-semibold">Status</th>
+                            <th className="px-6 py-4 font-semibold">Action</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 bg-white">
+                          {liveOrders.map((order) => (
+                            <tr key={order._id}>
+                              <td className="px-6 py-4 font-semibold text-slate-900">
+                                {order.orderNumber}
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="text-slate-900">
+                                  {order.customer.name}
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                  {order.customer.email}
+                                </p>
+                              </td>
+                              <td className="px-6 py-4 font-semibold text-slate-900">
+                                ${order.total}
+                              </td>
+                              <td className="px-6 py-4 text-slate-600">
+                                {order.paymentMethod}
+                              </td>
+                              <td className="px-6 py-4">
+                                {order.proofImageUrl ? (
+                                  <a
+                                    href={order.proofImageUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-3 text-xs font-semibold text-slate-900 hover:text-slate-700"
+                                  >
+                                    <span className="flex h-10 w-10 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+                                      <img
+                                        src={order.proofImageUrl}
+                                        alt={`Proof for ${order.orderNumber}`}
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    </span>
+                                    <span className="break-words text-left">
+                                      View proof
+                                    </span>
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-slate-500">
+                                    No proof
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    onClick={() =>
+                                      handleViewOrderDetails(order)
+                                    }
+                                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                                  >
+                                    View payment details
+                                  </button>
+                                  {order.paymentStatus !== "paid" && (
+                                    <button
+                                      onClick={() => handleMarkPaid(order._id)}
+                                      className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                                    >
+                                      Mark paid
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </section>
+
+              {selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8">
+                  <div className="w-full max-w-3xl overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+                    <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                          Payment details
+                        </p>
+                        <h3 className="mt-1 text-2xl font-semibold text-slate-900">
+                          {selectedOrder.orderNumber}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={closeOrderDetails}
+                        className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <div className="space-y-6 px-6 py-6 text-slate-700">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                            Customer
+                          </p>
+                          <p className="mt-3 text-sm font-semibold text-slate-900">
+                            {selectedOrder.customer.name}
+                          </p>
+                          <p className="text-sm text-slate-600">
+                            {selectedOrder.customer.email}
+                          </p>
+                          {selectedOrder.customer.phone && (
+                            <p className="text-sm text-slate-600">
+                              {selectedOrder.customer.phone}
+                            </p>
+                          )}
+                          {selectedOrder.customer.address && (
+                            <p className="text-sm text-slate-600">
+                              {selectedOrder.customer.address}
+                            </p>
+                          )}
+                        </div>
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                            Order summary
+                          </p>
+                          <p className="mt-3 text-sm text-slate-600">
+                            <span className="font-semibold text-slate-900">
+                              Amount:
+                            </span>{" "}
+                            ${selectedOrder.total}
+                          </p>
+                          <p className="mt-2 text-sm text-slate-600">
+                            <span className="font-semibold text-slate-900">
+                              Method:
+                            </span>{" "}
+                            {selectedOrder.paymentMethod}
+                          </p>
+                          <p className="mt-2 text-sm text-slate-600">
+                            <span className="font-semibold text-slate-900">
+                              Status:
+                            </span>{" "}
+                            {selectedOrder.paymentStatus}
+                          </p>
+                        </div>
+                      </div>
+
+                      {selectedOrder.notes && (
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                            Notes
+                          </p>
+                          <p className="mt-3 text-sm text-slate-600">
+                            {selectedOrder.notes}
+                          </p>
+                        </div>
+                      )}
+
+                      {(selectedOrder.billingAddress ||
+                        selectedOrder.shippingAddress) && (
+                        <div className="grid gap-4 md:grid-cols-2">
+                          {selectedOrder.billingAddress && (
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                                Billing Address
+                              </p>
+                              <div className="mt-3 space-y-2 text-sm text-slate-600">
+                                {selectedOrder.billingAddress.streetAddress && (
+                                  <p>
+                                    {selectedOrder.billingAddress.streetAddress}
+                                  </p>
+                                )}
+                                {selectedOrder.billingAddress
+                                  .streetAddress2 && (
+                                  <p>
+                                    {
+                                      selectedOrder.billingAddress
+                                        .streetAddress2
+                                    }
+                                  </p>
+                                )}
+                                {(selectedOrder.billingAddress.city ||
+                                  selectedOrder.billingAddress.stateProvince ||
+                                  selectedOrder.billingAddress.postalCode) && (
+                                  <p>
+                                    {selectedOrder.billingAddress.city}
+                                    {selectedOrder.billingAddress.city && ", "}
+                                    {selectedOrder.billingAddress.stateProvince}
+                                    {selectedOrder.billingAddress.postalCode &&
+                                      ` ${selectedOrder.billingAddress.postalCode}`}
+                                  </p>
+                                )}
+                                {selectedOrder.billingAddress.country && (
+                                  <p>{selectedOrder.billingAddress.country}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {selectedOrder.shippingAddress && (
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                                Shipping Address
+                              </p>
+                              <div className="mt-3 space-y-2 text-sm text-slate-600">
+                                {selectedOrder.shippingAddress
+                                  .streetAddress && (
+                                  <p>
+                                    {
+                                      selectedOrder.shippingAddress
+                                        .streetAddress
+                                    }
+                                  </p>
+                                )}
+                                {selectedOrder.shippingAddress
+                                  .streetAddress2 && (
+                                  <p>
+                                    {
+                                      selectedOrder.shippingAddress
+                                        .streetAddress2
+                                    }
+                                  </p>
+                                )}
+                                {(selectedOrder.shippingAddress.city ||
+                                  selectedOrder.shippingAddress.stateProvince ||
+                                  selectedOrder.shippingAddress.postalCode) && (
+                                  <p>
+                                    {selectedOrder.shippingAddress.city}
+                                    {selectedOrder.shippingAddress.city && ", "}
+                                    {
+                                      selectedOrder.shippingAddress
+                                        .stateProvince
+                                    }
+                                    {selectedOrder.shippingAddress.postalCode &&
+                                      ` ${selectedOrder.shippingAddress.postalCode}`}
+                                  </p>
+                                )}
+                                {selectedOrder.shippingAddress.country && (
+                                  <p>{selectedOrder.shippingAddress.country}</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {selectedOrder.paymentMethod === "Credit Card" ? (
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                            Credit card details
+                          </p>
+                          <div className="mt-4 space-y-3 text-sm text-slate-600">
+                            <p>
+                              <span className="font-semibold text-slate-900">
+                                Cardholder:
+                              </span>{" "}
+                              {selectedOrder.paymentDetails?.cardName ?? "—"}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-900">
+                                Card number:
+                              </span>{" "}
+                              {selectedOrder.paymentDetails?.cardNumber
+                                ? formatCardNumber(
+                                    selectedOrder.paymentDetails.cardNumber,
+                                  )
+                                : "—"}
+                            </p>
+                            <p>
+                              <span className="font-semibold text-slate-900">
+                                Expiration:
+                              </span>{" "}
+                              {selectedOrder.paymentDetails?.cardExpMonth
+                                ? `${selectedOrder.paymentDetails.cardExpMonth}/${selectedOrder.paymentDetails.cardExpYear ?? ""}`
+                                : "—"}
+                            </p>
+                            {selectedOrder.paymentDetails?.cardCvc && (
+                              <p>
+                                <span className="font-semibold text-slate-900">
+                                  CVV:
+                                </span>{" "}
+                                {selectedOrder.paymentDetails.cardCvc}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                            Payment proof / details
+                          </p>
+                          <div className="mt-4 space-y-3 text-sm text-slate-600">
+                            {selectedOrder.proofImageUrl ? (
+                              <a
+                                href={selectedOrder.proofImageUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                              >
+                                View uploaded proof
+                              </a>
+                            ) : (
+                              <p className="text-sm text-slate-500">
+                                No proof uploaded yet.
+                              </p>
+                            )}
+                            {selectedOrder.paymentDetails &&
+                              Object.keys(selectedOrder.paymentDetails).length >
+                                0 && (
+                                <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                                  {Object.entries(
+                                    selectedOrder.paymentDetails,
+                                  ).map(([label, value]) => (
+                                    <p
+                                      key={label}
+                                      className="text-sm text-slate-600"
+                                    >
+                                      <span className="font-semibold text-slate-900">
+                                        {label}:
+                                      </span>{" "}
+                                      {value}
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

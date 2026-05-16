@@ -36,7 +36,54 @@ router.get("/:id", async (req, res) => {
 // Accepts multipart/form-data so the payment proof image can be uploaded in one shot
 router.post("/", uploadPaymentProof.single("proofImage"), async (req, res) => {
   try {
-    const { customer, items, total, paymentMethod, notes } = req.body;
+    const {
+      customer,
+      items,
+      total,
+      paymentMethod,
+      notes,
+      cardName,
+      cardNumber,
+      cardExpMonth,
+      cardExpYear,
+      cardCvc,
+      billingStreetAddress,
+      billingStreetAddress2,
+      billingCity,
+      billingStateProvince,
+      billingPostalCode,
+      billingCountry,
+      shippingStreetAddress,
+      shippingStreetAddress2,
+      shippingCity,
+      shippingStateProvince,
+      shippingPostalCode,
+      shippingCountry,
+    } = req.body;
+
+    const paymentDetails = {};
+    if (cardName) paymentDetails.cardName = cardName;
+    if (cardNumber) paymentDetails.cardNumber = cardNumber;
+    if (cardExpMonth) paymentDetails.cardExpMonth = cardExpMonth;
+    if (cardExpYear) paymentDetails.cardExpYear = cardExpYear;
+    if (cardCvc) paymentDetails.cardCvc = cardCvc;
+
+    const billingAddress = {
+      streetAddress: billingStreetAddress || "",
+      streetAddress2: billingStreetAddress2 || "",
+      city: billingCity || "",
+      stateProvince: billingStateProvince || "",
+      postalCode: billingPostalCode || "",
+      country: billingCountry || "",
+    };
+    const shippingAddress = {
+      streetAddress: shippingStreetAddress || "",
+      streetAddress2: shippingStreetAddress2 || "",
+      city: shippingCity || "",
+      stateProvince: shippingStateProvince || "",
+      postalCode: shippingPostalCode || "",
+      country: shippingCountry || "",
+    };
 
     const order = new Order({
       customer: typeof customer === "string" ? JSON.parse(customer) : customer,
@@ -46,6 +93,9 @@ router.post("/", uploadPaymentProof.single("proofImage"), async (req, res) => {
       notes,
       proofImageUrl: req.file ? req.file.path : "",
       proofImagePublicId: req.file ? req.file.filename : "",
+      paymentDetails,
+      billingAddress,
+      shippingAddress,
       paymentStatus: req.file ? "processing" : "pending",
     });
 

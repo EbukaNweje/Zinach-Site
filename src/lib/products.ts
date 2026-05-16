@@ -31,9 +31,13 @@ export async function fetchProducts(): Promise<Product[]> {
             }))
           : [],
         features: Array.isArray(p.features) ? p.features : [],
-        createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : undefined,
-        updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : undefined,
-      })
+        createdAt: p.createdAt
+          ? new Date(p.createdAt).toISOString()
+          : undefined,
+        updatedAt: p.updatedAt
+          ? new Date(p.updatedAt).toISOString()
+          : undefined,
+      }),
     );
 
     return sanitized as unknown as Product[];
@@ -49,7 +53,7 @@ export async function fetchProductBySlug(
     await connectDB();
     const product = await ProductModel.findOne({ slug }).lean();
     if (!product) return null;
-    return ({
+    return {
       ...product,
       _id: String((product as any)._id),
       packageOptions: Array.isArray(product.packageOptions)
@@ -59,9 +63,13 @@ export async function fetchProductBySlug(
           }))
         : [],
       features: Array.isArray(product.features) ? product.features : [],
-      createdAt: product.createdAt ? new Date(product.createdAt).toISOString() : undefined,
-      updatedAt: product.updatedAt ? new Date(product.updatedAt).toISOString() : undefined,
-    } as unknown) as Product;
+      createdAt: product.createdAt
+        ? new Date(product.createdAt).toISOString()
+        : undefined,
+      updatedAt: product.updatedAt
+        ? new Date(product.updatedAt).toISOString()
+        : undefined,
+    } as unknown as Product;
   } catch {
     return null;
   }

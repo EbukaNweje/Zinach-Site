@@ -6,7 +6,15 @@ const paymentInfoSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      enum: ["Chime", "Apple Pay", "Zelle", "PayPal", "Venmo", "BTC address"],
+      enum: [
+        "Chime",
+        "Apple Pay",
+        "Zelle",
+        "PayPal",
+        "Venmo",
+        "BTC",
+        "Interac",
+      ],
     },
     fields: {
       type: Map,

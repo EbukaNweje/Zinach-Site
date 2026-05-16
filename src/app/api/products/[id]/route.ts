@@ -28,8 +28,12 @@ export async function GET(
           }))
         : [],
       features: Array.isArray(product.features) ? product.features : [],
-      createdAt: product.createdAt ? new Date(product.createdAt).toISOString() : undefined,
-      updatedAt: product.updatedAt ? new Date(product.updatedAt).toISOString() : undefined,
+      createdAt: product.createdAt
+        ? new Date(product.createdAt).toISOString()
+        : undefined,
+      updatedAt: product.updatedAt
+        ? new Date(product.updatedAt).toISOString()
+        : undefined,
     };
     return NextResponse.json({ success: true, data: safe });
   } catch (err: unknown) {
@@ -86,8 +90,12 @@ export async function PUT(
           }))
         : [],
       features: Array.isArray(saved.features) ? saved.features : [],
-      createdAt: saved.createdAt ? new Date(saved.createdAt).toISOString() : undefined,
-      updatedAt: saved.updatedAt ? new Date(saved.updatedAt).toISOString() : undefined,
+      createdAt: saved.createdAt
+        ? new Date(saved.createdAt).toISOString()
+        : undefined,
+      updatedAt: saved.updatedAt
+        ? new Date(saved.updatedAt).toISOString()
+        : undefined,
     };
     return NextResponse.json({ success: true, data: safeSaved });
   } catch (err: unknown) {

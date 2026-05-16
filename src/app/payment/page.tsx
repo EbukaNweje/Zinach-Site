@@ -7,6 +7,19 @@ interface PaymentPageProps {
     name?: string;
     email?: string;
     phone?: string;
+    billingStreetAddress?: string;
+    billingStreetAddress2?: string;
+    billingCity?: string;
+    billingStateProvince?: string;
+    billingPostalCode?: string;
+    billingCountry?: string;
+    shippingStreetAddress?: string;
+    shippingStreetAddress2?: string;
+    shippingCity?: string;
+    shippingStateProvince?: string;
+    shippingPostalCode?: string;
+    shippingCountry?: string;
+    sameShipping?: string;
   }>;
 }
 
@@ -19,6 +32,7 @@ const normalizeMethod = (value: string | undefined): PaymentMethod => {
     zelle: "Zelle",
     paypal: "PayPal",
     venmo: "Venmo",
+    interac: "Interac",
     "credit card": "Credit Card",
     creditcard: "Credit Card",
     "btc address": "BTC",
@@ -40,6 +54,22 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
   const customerName = params.name ?? "";
   const customerEmail = params.email ?? "";
   const customerPhone = params.phone ?? "";
+  const billingAddress = {
+    streetAddress: params.billingStreetAddress ?? "",
+    streetAddress2: params.billingStreetAddress2 ?? "",
+    city: params.billingCity ?? "",
+    stateProvince: params.billingStateProvince ?? "",
+    postalCode: params.billingPostalCode ?? "",
+    country: params.billingCountry ?? "",
+  };
+  const shippingAddress = {
+    streetAddress: params.shippingStreetAddress ?? "",
+    streetAddress2: params.shippingStreetAddress2 ?? "",
+    city: params.shippingCity ?? "",
+    stateProvince: params.shippingStateProvince ?? "",
+    postalCode: params.shippingPostalCode ?? "",
+    country: params.shippingCountry ?? "",
+  };
 
   return (
     <PaymentForm
@@ -48,6 +78,9 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
       customerName={customerName}
       customerEmail={customerEmail}
       customerPhone={customerPhone}
+      billingAddress={billingAddress}
+      shippingAddress={shippingAddress}
+      sameShipping={params.sameShipping === "true"}
     />
   );
 }

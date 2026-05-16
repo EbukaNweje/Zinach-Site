@@ -15,6 +15,12 @@ const initialForm = {
   postalCode: "",
   country: "",
   sameShipping: true,
+  shippingStreetAddress: "",
+  shippingStreetAddress2: "",
+  shippingCity: "",
+  shippingStateProvince: "",
+  shippingPostalCode: "",
+  shippingCountry: "",
   expressShipping: false,
   shippingMethod: "standard",
   paymentMethod: "Chime",
@@ -33,6 +39,7 @@ const paymentMethods = [
   "Zelle",
   "PayPal",
   "Venmo",
+  "Interac",
   "Credit Card",
   "BTC",
 ];
@@ -73,12 +80,38 @@ export default function BillingPage() {
     e.preventDefault();
     if (!form.agree) return;
 
+    const shippingAddress = form.sameShipping
+      ? {
+          shippingStreetAddress: form.streetAddress,
+          shippingStreetAddress2: form.streetAddress2,
+          shippingCity: form.city,
+          shippingStateProvince: form.stateProvince,
+          shippingPostalCode: form.postalCode,
+          shippingCountry: form.country,
+        }
+      : {
+          shippingStreetAddress: form.shippingStreetAddress,
+          shippingStreetAddress2: form.shippingStreetAddress2,
+          shippingCity: form.shippingCity,
+          shippingStateProvince: form.shippingStateProvince,
+          shippingPostalCode: form.shippingPostalCode,
+          shippingCountry: form.shippingCountry,
+        };
+
     const params = new URLSearchParams({
       method: form.paymentMethod,
       amount: total.toFixed(2),
       name: form.fullName,
       email: form.email,
       phone: form.contactNumber,
+      billingStreetAddress: form.streetAddress,
+      billingStreetAddress2: form.streetAddress2,
+      billingCity: form.city,
+      billingStateProvince: form.stateProvince,
+      billingPostalCode: form.postalCode,
+      billingCountry: form.country,
+      ...shippingAddress,
+      sameShipping: String(form.sameShipping),
     });
 
     router.push(`/payment?${params.toString()}`);
@@ -251,6 +284,93 @@ export default function BillingPage() {
                   Express Shipping
                 </label>
               </div>
+
+              {!form.sameShipping && (
+                <div className="rounded-4xl bg-slate-50 p-6">
+                  <h2 className="mb-5 text-xl font-semibold text-slate-900">
+                    Shipping Address
+                  </h2>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <label className="block md:col-span-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        Street Address
+                      </span>
+                      <input
+                        required
+                        value={form.shippingStreetAddress}
+                        onChange={(e) =>
+                          updateField("shippingStreetAddress", e.target.value)
+                        }
+                        className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
+                      />
+                    </label>
+                    <label className="block md:col-span-2">
+                      <span className="text-sm font-medium text-slate-700">
+                        Street Address Line 2
+                      </span>
+                      <input
+                        value={form.shippingStreetAddress2}
+                        onChange={(e) =>
+                          updateField("shippingStreetAddress2", e.target.value)
+                        }
+                        className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-slate-700">
+                        City
+                      </span>
+                      <input
+                        required
+                        value={form.shippingCity}
+                        onChange={(e) =>
+                          updateField("shippingCity", e.target.value)
+                        }
+                        className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-slate-700">
+                        State / Province
+                      </span>
+                      <input
+                        required
+                        value={form.shippingStateProvince}
+                        onChange={(e) =>
+                          updateField("shippingStateProvince", e.target.value)
+                        }
+                        className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-slate-700">
+                        Postal / Zip Code
+                      </span>
+                      <input
+                        required
+                        value={form.shippingPostalCode}
+                        onChange={(e) =>
+                          updateField("shippingPostalCode", e.target.value)
+                        }
+                        className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="text-sm font-medium text-slate-700">
+                        Country
+                      </span>
+                      <input
+                        required
+                        value={form.shippingCountry}
+                        onChange={(e) =>
+                          updateField("shippingCountry", e.target.value)
+                        }
+                        className="mt-2 w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-slate-500"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="rounded-4xl bg-slate-50 p-6 text-slate-700">
                 <h2 className="text-lg font-semibold text-slate-900">
