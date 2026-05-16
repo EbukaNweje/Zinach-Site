@@ -82,6 +82,13 @@ export default function AdminPage() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  useEffect(() => {
+    const stored = window.localStorage.getItem("adminAuthenticated");
+    if (stored === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   // ── Live orders & metrics ──────────────────────────────────────────────────
   const [liveOrders, setLiveOrders] = useState<LiveOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -144,6 +151,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (loginPassword === ADMIN_PASSWORD) {
       setIsAuthenticated(true);
+      window.localStorage.setItem("adminAuthenticated", "true");
       setLoginError("");
     } else {
       setLoginError("Incorrect password. Please try again.");
@@ -572,7 +580,10 @@ export default function AdminPage() {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <button
-                    onClick={() => setIsAuthenticated(false)}
+                    onClick={() => {
+                      setIsAuthenticated(false);
+                      window.localStorage.removeItem("adminAuthenticated");
+                    }}
                     className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100"
                   >
                     Sign out
@@ -1355,8 +1366,8 @@ export default function AdminPage() {
 
               {selectedOrder && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-8">
-                  <div className="w-full max-w-3xl overflow-hidden rounded-[2rem] bg-white shadow-2xl">
-                    <div className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+                  <div className="w-full max-w-3xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[2rem] bg-white shadow-2xl">
+                    <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white px-6 py-5">
                       <div>
                         <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
                           Payment details
