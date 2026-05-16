@@ -21,6 +21,7 @@ const orderSchema = new Schema(
     items: [orderItemSchema],
     total: { type: String, required: true },
     paymentMethod: { type: String, required: true },
+    shippingMethod: { type: String, default: "" },
     paymentStatus: {
       type: String,
       enum: ["pending", "processing", "paid", "failed"],

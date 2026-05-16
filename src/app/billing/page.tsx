@@ -110,6 +110,7 @@ export default function BillingPage() {
       billingStateProvince: form.stateProvince,
       billingPostalCode: form.postalCode,
       billingCountry: form.country,
+      shippingMethod: form.shippingMethod,
       ...shippingAddress,
       sameShipping: String(form.sameShipping),
     });

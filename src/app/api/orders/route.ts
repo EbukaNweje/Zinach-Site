@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       | string
       | null;
     const shippingCountry = formData.get("shippingCountry") as string | null;
+    const shippingMethod = getStringValue(formData.get("shippingMethod")) ?? "";
 
     const paymentDetails: Record<string, string> = {};
     if (cardName) paymentDetails.cardName = cardName;
@@ -144,6 +145,7 @@ export async function POST(req: NextRequest) {
       paymentDetails,
       billingAddress,
       shippingAddress,
+      shippingMethod,
       paymentStatus: proofFile && proofFile.size > 0 ? "processing" : "pending",
     });
 

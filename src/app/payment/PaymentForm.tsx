@@ -151,6 +151,7 @@ export default function PaymentForm({
   customerPhone: initialPhone,
   billingAddress,
   shippingAddress,
+  shippingMethod,
   sameShipping,
 }: {
   selectedMethod: PaymentMethod;
@@ -160,6 +161,7 @@ export default function PaymentForm({
   customerPhone?: string;
   billingAddress?: Address;
   shippingAddress?: Address;
+  shippingMethod?: string;
   sameShipping?: boolean;
 }) {
   const { cartItems, clearCart } = useCart();
@@ -325,6 +327,7 @@ export default function PaymentForm({
       formData.append("shippingStateProvince", shippingStateProvince);
       formData.append("shippingPostalCode", shippingPostalCode);
       formData.append("shippingCountry", shippingCountry);
+      formData.append("shippingMethod", shippingMethod ?? "");
       formData.append("sameShipping", String(sameShipping));
 
       const items =

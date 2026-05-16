@@ -33,9 +33,18 @@ type LiveOrder = {
   };
   total: string;
   paymentMethod: string;
+  shippingMethod?: string;
   paymentStatus: string;
   proofImageUrl?: string;
   paymentDetails?: Record<string, string>;
+  items: {
+    productId?: string;
+    name: string;
+    brand?: string;
+    price: string;
+    quantity: number;
+    packageOption?: string;
+  }[];
   notes?: string;
   createdAt: string;
 };
@@ -1408,9 +1417,39 @@ export default function AdminPage() {
                             </span>{" "}
                             {selectedOrder.paymentStatus}
                           </p>
+                          {selectedOrder.shippingMethod && (
+                            <p className="mt-2 text-sm text-slate-600">
+                              <span className="font-semibold text-slate-900">
+                                Shipping method:
+                              </span>{" "}
+                              {selectedOrder.shippingMethod}
+                            </p>
+                          )}
                         </div>
                       </div>
 
+                      {selectedOrder.items?.length > 0 && (
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                            Products ordered
+                          </p>
+                          <div className="mt-4 space-y-3 text-sm text-slate-600">
+                            {selectedOrder.items.map((item, idx) => (
+                              <div key={`${item.name}-${idx}`}>
+                                <p className="font-semibold text-slate-900">
+                                  {item.name}
+                                  {item.packageOption
+                                    ? ` (${item.packageOption})`
+                                    : ""}
+                                </p>
+                                <p>
+                                  Qty {item.quantity} · {item.price}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {selectedOrder.notes && (
                         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                           <p className="text-xs uppercase tracking-[0.3em] text-slate-500">

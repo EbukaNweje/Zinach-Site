@@ -19,6 +19,7 @@ interface PaymentPageProps {
     shippingStateProvince?: string;
     shippingPostalCode?: string;
     shippingCountry?: string;
+    shippingMethod?: string;
     sameShipping?: string;
   }>;
 }
@@ -80,6 +81,7 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
       customerPhone={customerPhone}
       billingAddress={billingAddress}
       shippingAddress={shippingAddress}
+      shippingMethod={params.shippingMethod ?? ""}
       sameShipping={params.sameShipping === "true"}
     />
   );
