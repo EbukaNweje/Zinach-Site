@@ -1,12 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useState,
-  ChangeEvent,
-  useEffect,
-  useCallback,
-} from "react";
+import { useState, ChangeEvent, useEffect, useCallback } from "react";
 import Script from "next/script";
 
 const ADMIN_PASSWORD = "Zinach2026";
@@ -207,7 +202,9 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.message || "Unable to load messages.");
       setContactMessages(data.data || []);
     } catch (err: unknown) {
-      setMessagesError(err instanceof Error ? err.message : "Unable to load messages.");
+      setMessagesError(
+        err instanceof Error ? err.message : "Unable to load messages.",
+      );
     } finally {
       setMessagesLoading(false);
     }

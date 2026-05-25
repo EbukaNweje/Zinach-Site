@@ -10,4 +10,5 @@ const contactMessageSchema = new Schema(
   { timestamps: true },
 );
 
-export default models.ContactMessage || model("ContactMessage", contactMessageSchema);
+export default models.ContactMessage ||
+  model("ContactMessage", contactMessageSchema);
