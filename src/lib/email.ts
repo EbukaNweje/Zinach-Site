@@ -5,6 +5,18 @@
 const BROVE_API_URL = process.env.BROVE_API_URL; // e.g. https://api.brove.example/send
 const BROVE_API_KEY = process.env.BROVE_API_KEY;
 const EMAIL_FROM = process.env.EMAIL_FROM;
+const SENDER_NAME = "Dr William Makis MD";
+
+function isValidEmail(email?: string): email is string {
+  return typeof email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 async function sendViaBrove({
   to,
@@ -23,6 +35,20 @@ async function sendViaBrove({
     );
   }
 
+  if (!isValidEmail(EMAIL_FROM)) {
+    throw new Error(
+      "Brove send failed: valid sender email required. Set EMAIL_FROM to a valid address in your environment.",
+    );
+  }
+
+  if (!isValidEmail(to)) {
+    throw new Error(`Brove send failed: invalid recipient email: ${to}`);
+  }
+
+  if (replyTo && !isValidEmail(replyTo)) {
+    throw new Error(`Brove send failed: invalid reply-to email: ${replyTo}`);
+  }
+
   const payload: Record<string, unknown> = {
     from: EMAIL_FROM,
     to,
@@ -34,12 +60,14 @@ async function sendViaBrove({
   // Brevo (formerly Sendinblue) expects the API key in the `api-key` header
   // and a specific payload shape for the /smtp/email endpoint.
   const brevoPayload: Record<string, unknown> = {
-    sender: { email: EMAIL_FROM },
+    sender: { name: SENDER_NAME, email: EMAIL_FROM },
     to: [{ email: to }],
     subject,
     htmlContent: html,
+    textContent: htmlToPlainText(html),
   };
-  if (replyTo) brevoPayload.replyTo = { email: replyTo };
+  if (replyTo)
+    brevoPayload.replyTo = { email: replyTo, name: "Website visitor" };
 
   const res = await fetch(BROVE_API_URL, {
     method: "POST",

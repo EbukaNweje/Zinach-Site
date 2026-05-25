@@ -1,3 +1,5 @@
+import connectDB from "@/lib/db/mongoose";
+import ContactMessage from "@/lib/models/ContactMessage";
 import { NextRequest, NextResponse } from "next/server";
 import { sendContactEmail } from "@/lib/email";
 
@@ -19,6 +21,9 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    await connectDB();
+    await ContactMessage.create({ name, email, subject, message });
 
     await sendContactEmail({ name, email, subject, message });
     return NextResponse.json({

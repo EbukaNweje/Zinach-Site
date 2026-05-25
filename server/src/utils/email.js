@@ -5,6 +5,14 @@
 const BROVE_API_URL = process.env.BROVE_API_URL;
 const BROVE_API_KEY = process.env.BROVE_API_KEY;
 const EMAIL_FROM = process.env.EMAIL_FROM;
+const SENDER_NAME = "Dr William Makis MD";
+
+function htmlToPlainText(html) {
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 async function sendViaBrove({ to, subject, html, replyTo }) {
   if (!BROVE_API_URL || !BROVE_API_KEY) {
@@ -19,12 +27,14 @@ async function sendViaBrove({ to, subject, html, replyTo }) {
   // Brevo expects the API key in the `api-key` header and a specific
   // payload for `/smtp/email`.
   const brevoPayload = {
-    sender: { email: EMAIL_FROM },
+    sender: { name: SENDER_NAME, email: EMAIL_FROM },
     to: [{ email: to }],
     subject,
     htmlContent: html,
+    textContent: htmlToPlainText(html),
   };
-  if (replyTo) brevoPayload.replyTo = { email: replyTo };
+  if (replyTo)
+    brevoPayload.replyTo = { email: replyTo, name: "Website visitor" };
 
   const res = await fetch(BROVE_API_URL, {
     method: "POST",

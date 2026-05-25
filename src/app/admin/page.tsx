@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, ChangeEvent, useEffect, useCallback } from "react";
+import {
+  useState,
+  ChangeEvent,
+  useEffect,
+  useCallback,
+} from "react";
 import Script from "next/script";
 
 const ADMIN_PASSWORD = "Zinach2026";
@@ -65,6 +70,15 @@ type PaymentField = { label: string; value: string };
 type PaymentInfoMap = Record<PaymentMethodName, PaymentField[]>;
 
 type PackageOption = { label: string; price: string };
+
+type ContactMessage = {
+  _id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+};
 
 type LiveProduct = {
   _id: string;
@@ -183,13 +197,30 @@ export default function AdminPage() {
     }
   }, []);
 
+  const fetchContactMessages = useCallback(async () => {
+    setMessagesLoading(true);
+    setMessagesError("");
+
+    try {
+      const res = await fetch("/api/contact-messages");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Unable to load messages.");
+      setContactMessages(data.data || []);
+    } catch (err: unknown) {
+      setMessagesError(err instanceof Error ? err.message : "Unable to load messages.");
+    } finally {
+      setMessagesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchOrders();
       fetchLiveProducts();
       fetchPaymentInfo();
+      fetchContactMessages();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchContactMessages]);
 
   const handleDeleteProduct = async (id: string) => {
     try {
@@ -337,6 +368,9 @@ export default function AdminPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [selectedOrder, setSelectedOrder] = useState<LiveOrder | null>(null);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState("");
 
   const formatCardNumber = (value?: string) => {
     if (!value) return "";
@@ -777,6 +811,58 @@ export default function AdminPage() {
                     {productSubmitting ? "Adding…" : "Add product"}
                   </button>
                 </form>
+              </section>
+
+              <section className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl">
+                <div className="mb-6">
+                  <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
+                    Contact messages
+                  </p>
+                  <h2 className="mt-3 text-2xl font-semibold text-slate-900">
+                    Incoming messages
+                  </h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Messages submitted through the contact form are listed here.
+                  </p>
+                </div>
+
+                {messagesLoading ? (
+                  <p className="text-sm text-slate-500">Loading messages…</p>
+                ) : messagesError ? (
+                  <div className="rounded-3xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    ❌ {messagesError}
+                  </div>
+                ) : contactMessages.length === 0 ? (
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
+                    No contact messages yet.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {contactMessages.map((message) => (
+                      <div
+                        key={message._id}
+                        className="rounded-3xl border border-slate-200 bg-slate-50 p-5"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">
+                              {message.subject}
+                            </p>
+                            <p className="text-sm text-slate-500">
+                              From {message.name} • {message.email}
+                            </p>
+                          </div>
+                          <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                            {new Date(message.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <p className="mt-4 text-sm leading-6 text-slate-700 whitespace-pre-line">
+                          {message.message}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
 
               {/* ── Manage Products ── */}
