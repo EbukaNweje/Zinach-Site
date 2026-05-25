@@ -125,10 +125,10 @@ function OrderSuccessModal({
             <span className="text-sm font-bold text-white">{orderNumber}</span>
           </div>
 
-          <p className="text-sm text-slate-400 text-center leading-6">
+          {/* <p className="text-sm text-slate-400 text-center leading-6">
             A confirmation email has been sent to your inbox. Please complete
             your payment using the {method} details shown on this page.
-          </p>
+          </p> */}
 
           <button
             onClick={onClose}
