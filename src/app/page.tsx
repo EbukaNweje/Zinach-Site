@@ -14,7 +14,7 @@ const faqs = [
   {
     question: "Can I choose a different payment method?",
     answer:
-      "Yes. The billing page offers Chime, Apple Pay, Zelle, PayPal, Venmo, Credit Card, and BTC options.",
+      "Yes. The billing page offers Chime, Apple Pay, Zelle, PayPal, Venmo, Interac, and BTC options.",
   },
   {
     question: "Do you ship nationwide?",
@@ -207,7 +207,7 @@ export default async function Home() {
                   <h3 className="text-xl font-semibold">Easy checkout</h3>
                   <p className="mt-3 text-slate-300">
                     Complete your billing information and choose Chime, Apple
-                    Pay, Zelle, PayPal, Venmo, Credit Card, or BTC.
+                    Pay, Zelle, PayPal, Venmo, Interac, or BTC.
                   </p>
                 </div>
               </div>

@@ -605,8 +605,8 @@ export default function AdminPage() {
                     Product and payment control center
                   </h1>
                   <p className="mt-4 max-w-2xl text-slate-600">
-                    Upload new products and update your payment payout details
-                    from here.
+                    Upload new products, manage payment payout details, and approve
+                    payments so customers are emailed only after verification.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -1231,6 +1231,9 @@ export default function AdminPage() {
                     <h2 className="mt-3 text-2xl font-semibold text-slate-900">
                       Latest activity
                     </h2>
+                    <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                      Customers receive their order notification only after you approve the payment by marking the order as paid.
+                    </p>
                   </div>
                   <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">
                     Live
@@ -1557,172 +1560,150 @@ export default function AdminPage() {
 
                       {(selectedOrder.billingAddress ||
                         selectedOrder.shippingAddress) && (
-                        <div className="grid gap-4 md:grid-cols-2">
-                          {selectedOrder.billingAddress && (
-                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                                Billing Address
-                              </p>
-                              <div className="mt-3 space-y-2 text-sm text-slate-600">
-                                {selectedOrder.billingAddress.streetAddress && (
-                                  <p>
-                                    {selectedOrder.billingAddress.streetAddress}
-                                  </p>
-                                )}
-                                {selectedOrder.billingAddress
-                                  .streetAddress2 && (
-                                  <p>
-                                    {
-                                      selectedOrder.billingAddress
-                                        .streetAddress2
-                                    }
-                                  </p>
-                                )}
-                                {(selectedOrder.billingAddress.city ||
-                                  selectedOrder.billingAddress.stateProvince ||
-                                  selectedOrder.billingAddress.postalCode) && (
-                                  <p>
-                                    {selectedOrder.billingAddress.city}
-                                    {selectedOrder.billingAddress.city && ", "}
-                                    {selectedOrder.billingAddress.stateProvince}
-                                    {selectedOrder.billingAddress.postalCode &&
-                                      ` ${selectedOrder.billingAddress.postalCode}`}
-                                  </p>
-                                )}
-                                {selectedOrder.billingAddress.country && (
-                                  <p>{selectedOrder.billingAddress.country}</p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                          {selectedOrder.shippingAddress && (
-                            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                              <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                                Shipping Address
-                              </p>
-                              <div className="mt-3 space-y-2 text-sm text-slate-600">
-                                {selectedOrder.shippingAddress
-                                  .streetAddress && (
-                                  <p>
-                                    {
-                                      selectedOrder.shippingAddress
-                                        .streetAddress
-                                    }
-                                  </p>
-                                )}
-                                {selectedOrder.shippingAddress
-                                  .streetAddress2 && (
-                                  <p>
-                                    {
-                                      selectedOrder.shippingAddress
-                                        .streetAddress2
-                                    }
-                                  </p>
-                                )}
-                                {(selectedOrder.shippingAddress.city ||
-                                  selectedOrder.shippingAddress.stateProvince ||
-                                  selectedOrder.shippingAddress.postalCode) && (
-                                  <p>
-                                    {selectedOrder.shippingAddress.city}
-                                    {selectedOrder.shippingAddress.city && ", "}
-                                    {
-                                      selectedOrder.shippingAddress
-                                        .stateProvince
-                                    }
-                                    {selectedOrder.shippingAddress.postalCode &&
-                                      ` ${selectedOrder.shippingAddress.postalCode}`}
-                                  </p>
-                                )}
-                                {selectedOrder.shippingAddress.country && (
-                                  <p>{selectedOrder.shippingAddress.country}</p>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {selectedOrder.paymentMethod === "Credit Card" ? (
-                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                            Credit card details
-                          </p>
-                          <div className="mt-4 space-y-3 text-sm text-slate-600">
-                            <p>
-                              <span className="font-semibold text-slate-900">
-                                Cardholder:
-                              </span>{" "}
-                              {selectedOrder.paymentDetails?.cardName ?? "—"}
-                            </p>
-                            <p>
-                              <span className="font-semibold text-slate-900">
-                                Card number:
-                              </span>{" "}
-                              {selectedOrder.paymentDetails?.cardNumber
-                                ? formatCardNumber(
-                                    selectedOrder.paymentDetails.cardNumber,
-                                  )
-                                : "—"}
-                            </p>
-                            <p>
-                              <span className="font-semibold text-slate-900">
-                                Expiration:
-                              </span>{" "}
-                              {selectedOrder.paymentDetails?.cardExpMonth
-                                ? `${selectedOrder.paymentDetails.cardExpMonth}/${selectedOrder.paymentDetails.cardExpYear ?? ""}`
-                                : "—"}
-                            </p>
-                            {selectedOrder.paymentDetails?.cardCvc && (
-                              <p>
-                                <span className="font-semibold text-slate-900">
-                                  CVV:
-                                </span>{" "}
-                                {selectedOrder.paymentDetails.cardCvc}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-                          <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                            Payment proof / details
-                          </p>
-                          <div className="mt-4 space-y-3 text-sm text-slate-600">
-                            {selectedOrder.proofImageUrl ? (
-                              <a
-                                href={selectedOrder.proofImageUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                              >
-                                View uploaded proof
-                              </a>
-                            ) : (
-                              <p className="text-sm text-slate-500">
-                                No proof uploaded yet.
-                              </p>
-                            )}
-                            {selectedOrder.paymentDetails &&
-                              Object.keys(selectedOrder.paymentDetails).length >
-                                0 && (
-                                <div className="rounded-3xl border border-slate-200 bg-white p-4">
-                                  {Object.entries(
-                                    selectedOrder.paymentDetails,
-                                  ).map(([label, value]) => (
-                                    <p
-                                      key={label}
-                                      className="text-sm text-slate-600"
-                                    >
-                                      <span className="font-semibold text-slate-900">
-                                        {label}:
-                                      </span>{" "}
-                                      {value}
+                        <>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            {selectedOrder.billingAddress && (
+                              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                                  Billing Address
+                                </p>
+                                <div className="mt-3 space-y-2 text-sm text-slate-600">
+                                  {selectedOrder.billingAddress
+                                    .streetAddress && (
+                                    <p>
+                                      {
+                                        selectedOrder.billingAddress
+                                          .streetAddress
+                                      }
                                     </p>
-                                  ))}
+                                  )}
+                                  {selectedOrder.billingAddress
+                                    .streetAddress2 && (
+                                    <p>
+                                      {
+                                        selectedOrder.billingAddress
+                                          .streetAddress2
+                                      }
+                                    </p>
+                                  )}
+                                  {(selectedOrder.billingAddress.city ||
+                                    selectedOrder.billingAddress
+                                      .stateProvince ||
+                                    selectedOrder.billingAddress
+                                      .postalCode) && (
+                                    <p>
+                                      {selectedOrder.billingAddress.city}
+                                      {selectedOrder.billingAddress.city &&
+                                        ", "}
+                                      {
+                                        selectedOrder.billingAddress
+                                          .stateProvince
+                                      }
+                                      {selectedOrder.billingAddress
+                                        .postalCode &&
+                                        ` ${selectedOrder.billingAddress.postalCode}`}
+                                    </p>
+                                  )}
+                                  {selectedOrder.billingAddress.country && (
+                                    <p>
+                                      {selectedOrder.billingAddress.country}
+                                    </p>
+                                  )}
                                 </div>
-                              )}
+                              </div>
+                            )}
+                            {selectedOrder.shippingAddress && (
+                              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                                  Shipping Address
+                                </p>
+                                <div className="mt-3 space-y-2 text-sm text-slate-600">
+                                  {selectedOrder.shippingAddress
+                                    .streetAddress && (
+                                    <p>
+                                      {
+                                        selectedOrder.shippingAddress
+                                          .streetAddress
+                                      }
+                                    </p>
+                                  )}
+                                  {selectedOrder.shippingAddress
+                                    .streetAddress2 && (
+                                    <p>
+                                      {
+                                        selectedOrder.shippingAddress
+                                          .streetAddress2
+                                      }
+                                    </p>
+                                  )}
+                                  {(selectedOrder.shippingAddress.city ||
+                                    selectedOrder.shippingAddress
+                                      .stateProvince ||
+                                    selectedOrder.shippingAddress
+                                      .postalCode) && (
+                                    <p>
+                                      {selectedOrder.shippingAddress.city}
+                                      {selectedOrder.shippingAddress.city &&
+                                        ", "}
+                                      {
+                                        selectedOrder.shippingAddress
+                                          .stateProvince
+                                      }
+                                      {selectedOrder.shippingAddress
+                                        .postalCode &&
+                                        ` ${selectedOrder.shippingAddress.postalCode}`}
+                                    </p>
+                                  )}
+                                  {selectedOrder.shippingAddress.country && (
+                                    <p>
+                                      {selectedOrder.shippingAddress.country}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </div>
+                          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                            <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                              Payment proof / details
+                            </p>
+                            <div className="mt-4 space-y-3 text-sm text-slate-600">
+                              {selectedOrder.proofImageUrl ? (
+                                <a
+                                  href={selectedOrder.proofImageUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-2 rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                                >
+                                  View uploaded proof
+                                </a>
+                              ) : (
+                                <p className="text-sm text-slate-500">
+                                  No proof uploaded yet.
+                                </p>
+                              )}
+                              {selectedOrder.paymentDetails &&
+                                Object.keys(selectedOrder.paymentDetails)
+                                  .length > 0 && (
+                                  <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                                    {Object.entries(
+                                      selectedOrder.paymentDetails,
+                                    ).map(([label, value]) => (
+                                      <p
+                                        key={label}
+                                        className="text-sm text-slate-600"
+                                      >
+                                        <span className="font-semibold text-slate-900">
+                                          {label}:
+                                        </span>{" "}
+                                        {value}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+                            </div>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>

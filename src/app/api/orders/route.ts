@@ -151,15 +151,21 @@ export async function POST(req: NextRequest) {
 
     await order.save();
 
-    // Fire emails without blocking response
-    Promise.all([
-      sendOrderConfirmation(order).catch((e: Error) =>
-        console.error("Order email failed:", e.message),
-      ),
-      sendAdminNotification(order).catch((e: Error) =>
-        console.error("Admin email failed:", e.message),
-      ),
-    ]);
+    // Fire emails without blocking response.
+    // Track whether the order confirmation succeeds so we can resend it on admin approval if needed.
+    sendOrderConfirmation(order)
+      .then(async () => {
+        await OrderModel.findByIdAndUpdate(order._id, {
+          orderConfirmationSent: true,
+        });
+      })
+      .catch((e: Error) => {
+        console.error("Order email failed:", e.message);
+      });
+
+    sendAdminNotification(order).catch((e: Error) =>
+      console.error("Admin email failed:", e.message),
+    );
 
     const o = order.toObject ? order.toObject() : order;
     const safeOrder = {

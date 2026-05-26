@@ -28,6 +28,7 @@ const orderSchema = new mongoose.Schema(
     },
     proofImageUrl: { type: String, default: "" },
     proofImagePublicId: { type: String, default: "" },
+    orderConfirmationSent: { type: Boolean, default: false },
     paymentDetails: { type: mongoose.Schema.Types.Mixed, default: {} },
     billingAddress: { type: mongoose.Schema.Types.Mixed, default: {} },
     shippingAddress: { type: mongoose.Schema.Types.Mixed, default: {} },

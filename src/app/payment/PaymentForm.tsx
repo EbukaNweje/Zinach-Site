@@ -12,7 +12,6 @@ export type PaymentMethod =
   | "PayPal"
   | "Venmo"
   | "Interac"
-  | "Credit Card"
   | "BTC";
 
 type Address = {
@@ -61,12 +60,6 @@ const methodInstructions: Record<string, string[]> = {
     "Enter the email and name shown below.",
     "Send the exact total amount.",
     "Save the transfer confirmation as proof.",
-  ],
-  "Credit Card": [
-    "Enter your card number, expiration, and CVV.",
-    "Review the order total.",
-    "Submit the payment.",
-    "Keep the receipt confirmation.",
   ],
   BTC: [
     "Open your Bitcoin wallet.",
@@ -166,8 +159,7 @@ export default function PaymentForm({
 }) {
   const { cartItems, clearCart } = useCart();
   const method = selectedMethod;
-  const showCardFields = method === "Credit Card";
-  const showProofUpload = method !== "Credit Card";
+  const showProofUpload = true;
   const instructions =
     methodInstructions[method] ?? methodInstructions["Chime"];
 
@@ -202,11 +194,6 @@ export default function PaymentForm({
   const [customerName, setCustomerName] = useState(initialName ?? "");
   const [customerEmail, setCustomerEmail] = useState(initialEmail ?? "");
   const [customerPhone, setCustomerPhone] = useState(initialPhone ?? "");
-  const [cardName, setCardName] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpMonth, setCardExpMonth] = useState("");
-  const [cardExpYear, setCardExpYear] = useState("");
-  const [cardCvc, setCardCvc] = useState("");
   const [paymentProof, setPaymentProof] = useState<File | null>(null);
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "submitting" | "success" | "error"
@@ -295,15 +282,6 @@ export default function PaymentForm({
     setSubmitStatus("submitting");
     setErrorMessage(null);
 
-    if (
-      showCardFields &&
-      (!cardName || !cardNumber || !cardExpMonth || !cardExpYear || !cardCvc)
-    ) {
-      setErrorMessage("Please enter all card details before continuing.");
-      setSubmitStatus("idle");
-      return;
-    }
-
     try {
       const formData = new FormData();
       formData.append(
@@ -340,14 +318,6 @@ export default function PaymentForm({
               packageOption: item.packageOption ?? "",
             }))
           : [{ name: "Order", price: amount, quantity: 1 }];
-
-      if (showCardFields) {
-        formData.append("cardName", cardName);
-        formData.append("cardNumber", cardNumber);
-        formData.append("cardExpMonth", cardExpMonth);
-        formData.append("cardExpYear", cardExpYear);
-        formData.append("cardCvc", cardCvc);
-      }
 
       formData.append("items", JSON.stringify(items));
       formData.append("total", amount);
@@ -475,89 +445,44 @@ export default function PaymentForm({
                   />
                 </div>
 
-                {/* Payment fields from API or card fields */}
-                {showCardFields ? (
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-4">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
-                      Card details
+                {/* Payment details */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-2">
+                    {method} details — copy &amp; send payment
+                  </p>
+                  {fieldsLoading ? (
+                    <p className="text-sm text-slate-500 py-4 text-center">
+                      Loading payment details…
                     </p>
-                    <input
-                      type="text"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      placeholder="Card number *"
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
-                    />
-                    <div className="grid grid-cols-3 gap-3">
-                      <input
-                        type="text"
-                        value={cardExpMonth}
-                        onChange={(e) => setCardExpMonth(e.target.value)}
-                        placeholder="MM"
-                        className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
-                      />
-                      <input
-                        type="text"
-                        value={cardExpYear}
-                        onChange={(e) => setCardExpYear(e.target.value)}
-                        placeholder="YYYY"
-                        className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
-                      />
-                      <input
-                        type="text"
-                        value={cardCvc}
-                        onChange={(e) => setCardCvc(e.target.value)}
-                        placeholder="CVV"
-                        className="rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      placeholder="Cardholder name"
-                      className="w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-sm text-white outline-none focus:border-slate-500 placeholder:text-slate-500"
-                    />
-                  </div>
-                ) : (
-                  <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 space-y-3">
-                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-2">
-                      {method} details — copy &amp; send payment
+                  ) : liveFields.length === 0 ? (
+                    <p className="text-sm text-slate-500 py-4 text-center">
+                      Payment details not configured yet. Contact support.
                     </p>
-                    {fieldsLoading ? (
-                      <p className="text-sm text-slate-500 py-4 text-center">
-                        Loading payment details…
-                      </p>
-                    ) : liveFields.length === 0 ? (
-                      <p className="text-sm text-slate-500 py-4 text-center">
-                        Payment details not configured yet. Contact support.
-                      </p>
-                    ) : (
-                      liveFields.map((field) => (
-                        <div
-                          key={field.label}
-                          className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-4"
-                        >
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
-                              {field.label}
-                            </p>
-                            <p className="mt-1 text-base font-semibold text-white break-all">
-                              {field.value}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(field.label, field.value)}
-                            className="flex-shrink-0 rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700"
-                          >
-                            {copyStates[field.label] ? "Copied ✓" : "Copy"}
-                          </button>
+                  ) : (
+                    liveFields.map((field) => (
+                      <div
+                        key={field.label}
+                        className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 px-4 py-4"
+                      >
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                            {field.label}
+                          </p>
+                          <p className="mt-1 text-base font-semibold text-white break-all">
+                            {field.value}
+                          </p>
                         </div>
-                      ))
-                    )}
-                  </div>
-                )}
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(field.label, field.value)}
+                          className="flex-shrink-0 rounded-full border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700"
+                        >
+                          {copyStates[field.label] ? "Copied ✓" : "Copy"}
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
 
                 {/* Proof upload */}
                 {showProofUpload && (

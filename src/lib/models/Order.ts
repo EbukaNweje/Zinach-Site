@@ -29,6 +29,7 @@ const orderSchema = new Schema(
     },
     proofImageUrl: { type: String, default: "" },
     proofImagePublicId: { type: String, default: "" },
+    orderConfirmationSent: { type: Boolean, default: false },
     paymentDetails: { type: Schema.Types.Mixed, default: {} },
     billingAddress: { type: Schema.Types.Mixed, default: {} },
     shippingAddress: { type: Schema.Types.Mixed, default: {} },

@@ -34,8 +34,6 @@ const normalizeMethod = (value: string | undefined): PaymentMethod => {
     paypal: "PayPal",
     venmo: "Venmo",
     interac: "Interac",
-    "credit card": "Credit Card",
-    creditcard: "Credit Card",
     "btc address": "BTC",
     btc: "BTC",
     btcaddress: "BTC",

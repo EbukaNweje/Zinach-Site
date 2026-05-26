@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/db/mongoose";
 import OrderModel from "@/lib/models/Order";
-import { sendPaymentConfirmation } from "@/lib/email";
+import { sendOrderConfirmation, sendPaymentConfirmation } from "@/lib/email";
 
 export async function PATCH(
   req: NextRequest,
@@ -34,6 +34,18 @@ export async function PATCH(
     }
 
     if (paymentStatus === "paid") {
+      if (!order.orderConfirmationSent) {
+        sendOrderConfirmation(order)
+          .then(async () => {
+            await OrderModel.findByIdAndUpdate(id, {
+              orderConfirmationSent: true,
+            });
+          })
+          .catch((e: Error) =>
+            console.error("Order confirmation email failed:", e.message),
+          );
+      }
+
       sendPaymentConfirmation(order).catch((e: Error) =>
         console.error("Payment confirmation email failed:", e.message),
       );

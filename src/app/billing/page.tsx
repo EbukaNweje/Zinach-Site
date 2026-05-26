@@ -40,7 +40,6 @@ const paymentMethods = [
   "PayPal",
   "Venmo",
   "Interac",
-  "Credit Card",
   "BTC",
 ];
 

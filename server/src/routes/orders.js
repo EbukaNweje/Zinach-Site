@@ -101,15 +101,21 @@ router.post("/", uploadPaymentProof.single("proofImage"), async (req, res) => {
 
     await order.save();
 
-    // Fire emails — don't block the response if email fails
-    Promise.all([
-      sendOrderConfirmation(order).catch((e) =>
-        console.error("Order confirmation email failed:", e.message),
-      ),
-      sendAdminNotification(order).catch((e) =>
-        console.error("Admin notification email failed:", e.message),
-      ),
-    ]);
+    // Fire emails — don't block the response if email fails.
+    // If the order confirmation succeeds, mark it sent so admin approval won't resend it.
+    sendOrderConfirmation(order)
+      .then(async () => {
+        await Order.findByIdAndUpdate(order._id, {
+          orderConfirmationSent: true,
+        });
+      })
+      .catch((e) => {
+        console.error("Order confirmation email failed:", e.message);
+      });
+
+    sendAdminNotification(order).catch((e) =>
+      console.error("Admin notification email failed:", e.message),
+    );
 
     res.status(201).json({ success: true, data: order });
   } catch (err) {
@@ -140,8 +146,21 @@ router.patch("/:id/status", async (req, res) => {
         .status(404)
         .json({ success: false, message: "Order not found" });
 
-    // Send payment confirmation email when admin marks as paid
+    // If admin approves payment, send the order confirmation if it never went out,
+    // then always send the payment confirmation.
     if (paymentStatus === "paid") {
+      if (!order.orderConfirmationSent) {
+        sendOrderConfirmation(order)
+          .then(async () => {
+            await Order.findByIdAndUpdate(req.params.id, {
+              orderConfirmationSent: true,
+            });
+          })
+          .catch((e) =>
+            console.error("Order confirmation email failed:", e.message),
+          );
+      }
+
       sendPaymentConfirmation(order).catch((e) =>
         console.error("Payment confirmation email failed:", e.message),
       );
